@@ -23,7 +23,7 @@ Sistema de georreferenciamento interno para alinhar as coordenadas da planta ao 
 
 Módulo Administrativo e Edição:
 
-Interface intuitiva para que gestores possam cadastrar e editar Pontos de Interesse (POIs), como salas de aula, laboratórios e banheiros.
+- Interface intuitiva para que gestores possam cadastrar e editar Pontos de Interesse (POIs), como salas de aula, laboratórios e banheiros.
 
 Ferramentas de limpeza visual para ocultar elementos técnicos irrelevantes da planta original e destacar rotas de circulação.
 
@@ -36,8 +36,6 @@ Visualização dinâmica do mapa com controles de zoom e movimentação (pan), u
 Sistema de busca rápida para localização de setores, servidores ou serviços específicos.
 
 Filtro de Acessibilidade: Camada específica para visualização de rampas, elevadores e rotas adaptadas.
-
-Desenvolvimento Ágil (VibeCoding):
 
 Utilização de Inteligência Artificial para geração e correção de código em tempo real.
 
