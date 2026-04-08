@@ -3,16 +3,16 @@
   <p>Alunos: João Paulo Kowalski, Julia Luzzi Baldissera & Samuel Castilho Pereira </p>
 </div>
 
-# Introdução:
+# Introdução
 A complexidade arquitetônica de instituições de ensino contemporâneas, frequentemente compostas por múltiplos blocos, níveis e setores administrativos, impõe desafios significativos à mobilidade e à localização espacial de seus usuários. Para alunos ingressantes, servidores e visitantes, a dificuldade em identificar serviços institucionais e estruturas de apoio pode gerar desorientação e comprometer a eficiência das atividades cotidianas. Nesse cenário, a transformação de plantas arquitetônicas estáticas em interfaces digitais dinâmicas surge como uma solução estratégica para democratizar o acesso à informação espacial.
 
-# Funcionalidade e Objetivos:
+# Funcionalidade e Objetivos
 
 ## Objetivos:
 
 Desenvolver uma aplicação web de arquitetura generalista capaz de processar plantas arquitetônicas estáticas e convertê-las em mapas interativos navegáveis, integrando informações institucionais e recursos de acessibilidade para otimizar a orientação espacial em ambientes educacionais.
 
-## Funcionalidades Principais
+## Funcionalidades Principais:
 Motor de Ingestão e Processamento de Dados:
 
 Conversão automatizada de plantas em formato PDF para formatos vetoriais (SVG ou GeoJSON).
