@@ -15,35 +15,21 @@ Desenvolver uma aplicação web de arquitetura generalista capaz de processar pl
 ## Funcionalidades Principais:
 Motor de Ingestão e Processamento de Dados:
 
-Conversão automatizada de plantas em formato PDF para formatos vetoriais (SVG ou GeoJSON).
-
-Extração de elementos geométricos para a criação de camadas navegáveis.
-
-Sistema de georreferenciamento interno para alinhar as coordenadas da planta ao sistema de navegação digital.
-
-Módulo Administrativo e Edição:
-
+- Conversão automatizada de plantas em formato PDF para formatos vetoriais (SVG ou GeoJSON).
+- Extração de elementos geométricos para a criação de camadas navegáveis.
+- Sistema de georreferenciamento interno para alinhar as coordenadas da planta ao sistema de navegação digital.
+- Módulo Administrativo e Edição:
 - Interface intuitiva para que gestores possam cadastrar e editar Pontos de Interesse (POIs), como salas de aula, laboratórios e banheiros.
-
-Ferramentas de limpeza visual para ocultar elementos técnicos irrelevantes da planta original e destacar rotas de circulação.
-
-Gestão de pavimentos, permitindo a visualização alternada de diferentes andares do mesmo edifício.
-
-Interface de Navegação Interativa (Frontend):
-
-Visualização dinâmica do mapa com controles de zoom e movimentação (pan), utilizando a biblioteca Leaflet.
-
-Sistema de busca rápida para localização de setores, servidores ou serviços específicos.
-
-Filtro de Acessibilidade: Camada específica para visualização de rampas, elevadores e rotas adaptadas.
-
-Utilização de Inteligência Artificial para geração e correção de código em tempo real.
-
-Prototipagem rápida de interfaces e funções lógicas, permitindo validações constantes e ajustes de usabilidade sem ciclos extensos de desenvolvimento manual.
-
-Manutenção e Autonomia:
-
-Painel de controle para que a própria instituição possa atualizar informações de salas ou mudanças de layout sem a necessidade de um desenvolvedor externo.
+- Ferramentas de limpeza visual para ocultar elementos técnicos irrelevantes da planta original e destacar rotas de circulação.
+- Gestão de pavimentos, permitindo a visualização alternada de diferentes andares do mesmo edifício.
+- Interface de Navegação Interativa (Frontend):
+- Visualização dinâmica do mapa com controles de zoom e movimentação (pan), utilizando a biblioteca Leaflet.
+- Sistema de busca rápida para localização de setores, servidores ou serviços específicos.
+- Filtro de Acessibilidade: Camada específica para visualização de rampas, elevadores e rotas adaptadas.
+- Utilização de Inteligência Artificial para geração e correção de código em tempo real.
+- Prototipagem rápida de interfaces e funções lógicas, permitindo validações constantes e ajustes de usabilidade sem ciclos extensos de desenvolvimento manual.
+- Manutenção e Autonomia:
+- Painel de controle para que a própria instituição possa atualizar informações de salas ou mudanças de layout sem a necessidade de um desenvolvedor externo.
 
 ## Techs
 ### Front / Backend:  ![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
