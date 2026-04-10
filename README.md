@@ -30,7 +30,6 @@ Interface de Navegação Interativa (Frontend):
 - Visualização dinâmica do mapa com controles de zoom e movimentação (pan), utilizando a biblioteca Leaflet.
 - Sistema de busca rápida para localização de setores, servidores ou serviços específicos.
 - Filtro de Acessibilidade: Camada específica para visualização de rampas, elevadores e rotas adaptadas.
-- Utilização de Inteligência Artificial para geração e correção de código em tempo real.
 - Prototipagem rápida de interfaces e funções lógicas, permitindo validações constantes e ajustes de usabilidade sem ciclos extensos de desenvolvimento manual.
   
 Manutenção e Autonomia:
