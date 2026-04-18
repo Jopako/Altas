@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 <div align="center">
   <h1>ALTAS</h1>
   <p>Alunos: João Paulo Kowalski, Julia Luzzi Baldissera & Samuel Castilho Pereira </p>
