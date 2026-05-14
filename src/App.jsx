@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/Login';
 import Callback from './pages/Callback';
@@ -17,3 +18,11 @@ function App() {
 }
 
 export default App;
+=======
+import PlantasPage from './pages/PlantasPage.jsx'
+
+export default function App() {
+  return <PlantasPage />
+}
+
+>>>>>>> visualizacao-plantas
