@@ -1,13 +1,17 @@
-version: '3.8'
 services:
   backend:
-    build: ./backend
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
     ports:
       - "3000:3000"
     volumes:
-      - ./backend:/app
+      - .:/app
       - /app/node_modules
-    env_file: ./backend/.env
+    environment:
+      PORT: 3000
+      FRONTEND_URL: http://localhost:5173
+      JWT_SECRET: dev-secret
 
   frontend:
     build: .
