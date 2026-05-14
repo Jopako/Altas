@@ -25,3 +25,5 @@ dist-ssr
 .env
 
 users.json
+plantasPredios/
+uploads/
