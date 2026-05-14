@@ -1,12 +1,17 @@
-import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs'
+import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-  '../../../node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs',
-  import.meta.url,
-).href
+// 1. Pega o diretório atual de forma segura no ESM
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// 2. Monta o caminho ABSOLUTO para o worker
+// Como o pdfExtractor.js está na raiz, a node_modules está no mesmo nível
+pdfjsLib.GlobalWorkerOptions.workerSrc = path.join(__dirname, 'node_modules', 'pdfjs-dist', 'legacy', 'build', 'pdf.worker.mjs');
 
 export async function extractPaths(pdfPath) {
-  try {
+  try { 
     const doc = await pdfjsLib.getDocument(pdfPath).promise
     const page = await doc.getPage(1)
     const ops = await page.getOperatorList()
@@ -17,7 +22,7 @@ export async function extractPaths(pdfPath) {
       if (ops.fnArray[i] !== OPS.constructPath) continue
 
       const args = ops.argsArray[i]
-      const coords = args[1]?.[0]
+      const coords = args[1]?.[0] 
       if (!coords || coords.length < 4) continue
 
       const points = []
