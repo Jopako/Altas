@@ -11,7 +11,7 @@ export default function Callback() {
 
     if (token) {
       localStorage.setItem('jwt_token', token);
-      navigate('/plantas');
+      navigate('/edit-plantas');
     } else {
       navigate('/login');
     }

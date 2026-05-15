@@ -9,13 +9,14 @@ export default function Dashboard() {
   useEffect(() => {
     const token = localStorage.getItem('jwt_token');
     if (!token) {
-      navigate('/login');
+      navigate('/');
       return;
     }
 
     try {
       const decodedUser = jwtDecode(token);
       setUser(decodedUser);
+    // eslint-disable-next-line no-unused-vars
     } catch (error) {
       localStorage.removeItem('jwt_token');
       navigate('/login');
