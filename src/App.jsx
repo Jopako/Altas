@@ -1,8 +1,7 @@
-<<<<<<< HEAD
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/Login';
 import Callback from './pages/Callback';
-import Dashboard from './pages/Dashboard';
+import PlantasPage from './pages/PlantasPage.jsx';
 
 function App() {
   return (
@@ -10,7 +9,7 @@ function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/callback" element={<Callback />} />
-        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/plantas" element={<PlantasPage />} />
         <Route path="*" element={<Navigate to="/login" />} />
       </Routes>
     </BrowserRouter>
@@ -18,11 +17,3 @@ function App() {
 }
 
 export default App;
-=======
-import PlantasPage from './pages/PlantasPage.jsx'
-
-export default function App() {
-  return <PlantasPage />
-}
-
->>>>>>> visualizacao-plantas
