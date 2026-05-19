@@ -20,18 +20,32 @@ const __dirname = path.dirname(__filename);
 
 const DB_FILE = path.join(__dirname, 'users.json');
 
+// Lista de e-mails específicos que devem ser administradores do sistema
+const ADMIN_EMAILS = [
+  'juliabaldissera06@gmail.com',
+  'julia.baldissera@estudantes.ifc.edu.br',
+  'samuelcastilhopereira@gmail.com',
+  'samuel.pereira@estudantes.ifc.edu.br'
+];
+
 const saveOrUpdateUser = (profile) => {
   let users = [];
   if (fs.existsSync(DB_FILE)) {
     users = JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
   }
 
+  // Normaliza o e-mail para letras minúsculas para evitar problemas de digitação
+  const userEmail = profile.email.toLowerCase();
+
   let role = 'comum';
-  if (profile.email.endsWith('@ifc.edu.br')) {
+  
+  // Regra 1: Se o e-mail estiver na lista de admins permitidos OU
+  // Regra 2: Se for um e-mail do domínio geral dos servidores do IFC
+  if (ADMIN_EMAILS.includes(userEmail) || userEmail.endsWith('@ifc.edu.br')) {
     role = 'admin';
   }
 
-  const existingUserIndex = users.findIndex((u) => u.email === profile.email);
+  const existingUserIndex = users.findIndex((u) => u.email.toLowerCase() === userEmail);
   const userData = { email: profile.email, name: profile.name, role };
 
   if (existingUserIndex >= 0) {
@@ -117,85 +131,227 @@ app.get('/auth/microsoft/callback', async (req, res) => {
   }
 });
 
-// ================= API DE PDF =================
+// ================= API DE MAPAS =================
+
 const uploadDir = path.join(__dirname, 'uploads');
-fs.mkdirSync(uploadDir, { recursive: true });
-const upload = multer({ dest: uploadDir });
+const imagesDir = path.join(uploadDir, 'images');
+const mapsDir = path.join(uploadDir, 'maps');
 
-function resolveLibraryDir() {
-  const candidates = [
-    process.env.ALTAS_LIBRARY_DIR,
-    path.join(__dirname, 'plantasPredios'),
-    path.join(__dirname, '../../K - Biblioteca'),
-  ].filter(Boolean);
+fs.mkdirSync(imagesDir, { recursive: true });
+fs.mkdirSync(mapsDir, { recursive: true });
 
-  for (const candidate of candidates) {
-    try {
-      if (fs.existsSync(candidate) && fs.statSync(candidate).isDirectory()) {
-        return candidate;
-      }
-    } catch {
-      // ignora e tenta o próximo
-    }
+app.use('/uploads', express.static(uploadDir));
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, imagesDir);
+  },
+
+  filename: (req, file, cb) => {
+    const uniqueName =
+      Date.now() + '-' + file.originalname;
+
+    cb(null, uniqueName);
+  },
+});
+
+const upload = multer({ storage });
+
+
+// ================= AUTH MIDDLEWARE =================
+
+function authMiddleware(req, res, next) {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader) {
+    return res.status(401).json({
+      error: 'Token não enviado.',
+    });
   }
-  return null;
+
+  const token = authHeader.split(' ')[1];
+
+  try {
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_SECRET || 'dev-secret'
+    );
+
+    req.user = decoded;
+
+    next();
+  } catch {
+    return res.status(401).json({
+      error: 'Token inválido.',
+    });
+  }
 }
 
-function safePdfName(fileName) {
-  const base = path.basename(fileName || '');
-  if (!base.toLowerCase().endsWith('.pdf')) return null;
-  if (base.includes('\0')) return null;
-  return base;
+function adminMiddleware(req, res, next) {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({
+      error: 'Apenas admins.',
+    });
+  }
+
+  next();
 }
+
+
+// ================= HEALTH =================
 
 app.get('/api/health', (req, res) => {
-  res.json({ ok: true, libraryDir: resolveLibraryDir() });
+  res.json({
+    ok: true,
+  });
 });
 
-app.get('/api/library', async (req, res) => {
+
+// ================= UPLOAD MAPA =================
+
+app.post(
+  '/api/maps/upload-image',
+  authMiddleware,
+  adminMiddleware,
+  upload.single('image'),
+  (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({
+          error: 'Nenhuma imagem enviada.',
+        });
+      }
+
+      const mapId = Date.now().toString();
+
+      const mapData = {
+        id: mapId,
+        name: req.body.name || 'Mapa sem nome',
+        imageUrl: `/uploads/images/${req.file.filename}`,
+        features: {
+          type: 'FeatureCollection',
+          features: [],
+        },
+        createdAt: new Date().toISOString(),
+      };
+
+      fs.writeFileSync(
+        path.join(mapsDir, `${mapId}.json`),
+        JSON.stringify(mapData, null, 2)
+      );
+
+      res.json(mapData);
+
+    } catch (err) {
+      console.error(err);
+
+      res.status(500).json({
+        error: 'Erro ao enviar imagem.',
+      });
+    }
+  }
+);
+
+
+// ================= LISTAR MAPAS =================
+
+app.get('/api/maps', (req, res) => {
   try {
-    const libDir = resolveLibraryDir();
-    if (!libDir) return res.json([]);
-    const files = fs.readdirSync(libDir).filter((file) => file.toLowerCase().endsWith('.pdf'));
-    res.json(files);
+    const files = fs.readdirSync(mapsDir);
+
+    const maps = files.map((file) => {
+      const raw = fs.readFileSync(
+        path.join(mapsDir, file),
+        'utf8'
+      );
+
+      return JSON.parse(raw);
+    });
+
+    res.json(maps);
+
   } catch (err) {
-    console.error('Erro na biblioteca:', err);
-    res.status(500).json({ error: 'Erro ao listar biblioteca.' });
+    console.error(err);
+
+    res.status(500).json({
+      error: 'Erro ao listar mapas.',
+    });
   }
 });
 
-app.get('/api/pdf/load-local', async (req, res) => {
+
+// ================= PEGAR MAPA =================
+
+app.get('/api/maps/:id', (req, res) => {
   try {
-    const fileName = safePdfName(req.query.file);
-    if (!fileName) return res.status(400).json({ error: 'Arquivo inválido.' });
+    const filePath = path.join(
+      mapsDir,
+      `${req.params.id}.json`
+    );
 
-    const libDir = resolveLibraryDir();
-    if (!libDir) return res.status(404).json({ error: 'Biblioteca não encontrada.' });
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({
+        error: 'Mapa não encontrado.',
+      });
+    }
 
-    const filePath = path.join(libDir, fileName);
-    if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'Arquivo não encontrado.' });
+    const raw = fs.readFileSync(filePath, 'utf8');
 
-    console.log('📄 Processando PDF local:', filePath);
-    const geojson = await extractPaths(filePath);
-    res.json(geojson);
+    res.json(JSON.parse(raw));
+
   } catch (err) {
-    console.error('Erro na extração local:', err);
-    res.status(500).json({ error: 'Erro ao processar o PDF local.' });
+    console.error(err);
+
+    res.status(500).json({
+      error: 'Erro ao carregar mapa.',
+    });
   }
 });
 
-app.post('/api/pdf/upload', upload.single('pdf'), async (req, res) => {
-  try {
-    if (!req.file) return res.status(400).json({ error: 'Nenhum arquivo enviado.' });
 
-    console.log('📄 Processando PDF upload:', req.file.path);
-    const geojson = await extractPaths(req.file.path);
-    res.json(geojson);
-  } catch (err) {
-    console.error('Erro na extração:', err);
-    res.status(500).json({ error: 'Erro ao processar o PDF.' });
+// ================= SALVAR GEOJSON =================
+
+app.put(
+  '/api/maps/:id/features',
+  authMiddleware,
+  adminMiddleware,
+  (req, res) => {
+    try {
+      const filePath = path.join(
+        mapsDir,
+        `${req.params.id}.json`
+      );
+
+      if (!fs.existsSync(filePath)) {
+        return res.status(404).json({
+          error: 'Mapa não encontrado.',
+        });
+      }
+
+      const mapData = JSON.parse(
+        fs.readFileSync(filePath, 'utf8')
+      );
+
+      mapData.features = req.body;
+
+      fs.writeFileSync(
+        filePath,
+        JSON.stringify(mapData, null, 2)
+      );
+
+      res.json({
+        success: true,
+      });
+
+    } catch (err) {
+      console.error(err);
+
+      res.status(500).json({
+        error: 'Erro ao salvar features.',
+      });
+    }
   }
-});
+);
 
 // ================= START =================
 app.listen(port, () => {

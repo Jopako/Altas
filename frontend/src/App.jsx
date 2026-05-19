@@ -3,6 +3,8 @@ import Login from './pages/Login';
 import Callback from './pages/Callback';
 import PlantasPage from './pages/PlantasPage.jsx';
 import EditPlantas from './pages/EditPlantas.jsx';
+import MapViewer from './pages/MapViewer.jsx';
+import MapEditor from './pages/MapEditor.jsx';
 
 function App() {
   return (
@@ -13,6 +15,8 @@ function App() {
         <Route path="/plantas" element={<PlantasPage />} />
         <Route path="*" element={<Navigate to="/login" />} />
         <Route path="/edit-plantas" element={<EditPlantas />} />
+        <Route path="/map-viewer" element={<MapViewer />} />
+        <Route path="/map-editor" element={<MapEditor />} />
       </Routes>
     </BrowserRouter>
   );

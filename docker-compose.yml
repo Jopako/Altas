@@ -26,3 +26,6 @@ services:
       - /app/node_modules
     environment:
       BACKEND_URL: http://backend:3000
+
+volumes:
+  node_modules:
