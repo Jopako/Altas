@@ -7,7 +7,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import dotenv from 'dotenv';
 import multer from 'multer';
-import { extractPaths } from './pdfExtractor.js';
+import crypto from 'node:crypto';
 
 dotenv.config();
 
@@ -28,6 +28,10 @@ const ADMIN_EMAILS = [
   'samuel.pereira@estudantes.ifc.edu.br'
 ];
 
+const hashPassword = (password) => {
+  return crypto.createHash('sha256').update(password).digest('hex');
+};
+
 const saveOrUpdateUser = (profile) => {
   let users = [];
   if (fs.existsSync(DB_FILE)) {
@@ -37,7 +41,7 @@ const saveOrUpdateUser = (profile) => {
   // Normaliza o e-mail para letras minúsculas para evitar problemas de digitação
   const userEmail = profile.email.toLowerCase();
 
-  let role = 'comum';
+  let role = 'visitante';
   
   // Regra 1: Se o e-mail estiver na lista de admins permitidos OU
   // Regra 2: Se for um e-mail do domínio geral dos servidores do IFC
@@ -49,6 +53,10 @@ const saveOrUpdateUser = (profile) => {
   const userData = { email: profile.email, name: profile.name, role };
 
   if (existingUserIndex >= 0) {
+    // Preserve any existing password if it exists
+    if (users[existingUserIndex].password) {
+      userData.password = users[existingUserIndex].password;
+    }
     users[existingUserIndex] = userData;
   } else {
     users.push(userData);
@@ -128,6 +136,83 @@ app.get('/auth/microsoft/callback', async (req, res) => {
   } catch (error) {
     console.error(error);
     res.redirect(`${frontendUrl}/login?error=auth_failed`);
+  }
+});
+
+// ================= STANDARD AUTH =================
+
+app.post('/api/auth/register', (req, res) => {
+  try {
+    const { name, email, password } = req.body;
+    if (!name || !email || !password) {
+      return res.status(400).json({ error: 'Todos os campos (nome, e-mail e senha) são obrigatórios.' });
+    }
+
+    const userEmail = email.toLowerCase().trim();
+    if (userEmail.endsWith('@estudantes.ifc.edu.br') || userEmail.endsWith('@ifc.edu.br')) {
+      return res.status(400).json({ error: 'Contas institucionais (@estudantes.ifc.edu.br ou @ifc.edu.br) devem obrigatoriamente utilizar o login com Microsoft.' });
+    }
+
+    let users = [];
+    if (fs.existsSync(DB_FILE)) {
+      users = JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
+    }
+
+    const existingUser = users.find((u) => u.email.toLowerCase() === userEmail);
+    if (existingUser) {
+      return res.status(400).json({ error: 'Este e-mail já está cadastrado.' });
+    }
+
+    const newUser = {
+      email: userEmail,
+      name: name.trim(),
+      role: 'visitante',
+      password: hashPassword(password),
+    };
+
+    users.push(newUser);
+    fs.writeFileSync(DB_FILE, JSON.stringify(users, null, 2));
+
+    // Sign token (without the password field)
+    const userPayload = { email: newUser.email, name: newUser.name, role: newUser.role };
+    const token = jwt.sign(userPayload, process.env.JWT_SECRET || 'dev-secret', { expiresIn: '2h' });
+
+    res.json({ token, user: userPayload });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erro interno ao realizar cadastro.' });
+  }
+});
+
+app.post('/api/auth/login', (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ error: 'E-mail e senha são obrigatórios.' });
+    }
+
+    const userEmail = email.toLowerCase().trim();
+    let users = [];
+    if (fs.existsSync(DB_FILE)) {
+      users = JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
+    }
+
+    const user = users.find((u) => u.email.toLowerCase() === userEmail);
+    if (!user || !user.password) {
+      return res.status(401).json({ error: 'E-mail ou senha incorretos, ou usuário cadastrado via OAuth.' });
+    }
+
+    if (user.password !== hashPassword(password)) {
+      return res.status(401).json({ error: 'E-mail ou senha incorretos.' });
+    }
+
+    const userPayload = { email: user.email, name: user.name, role: user.role };
+    const token = jwt.sign(userPayload, process.env.JWT_SECRET || 'dev-secret', { expiresIn: '2h' });
+
+    res.json({ token, user: userPayload });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erro interno ao realizar login.' });
   }
 });
 
@@ -228,6 +313,7 @@ app.post(
         id: mapId,
         name: req.body.name || 'Mapa sem nome',
         imageUrl: `/uploads/images/${req.file.filename}`,
+        creatorName: req.user?.name || req.user?.email || 'Administrador',
         features: {
           type: 'FeatureCollection',
           features: [],

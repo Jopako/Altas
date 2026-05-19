@@ -1,11 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
-
 import { FeatureGroup, GeoJSON, ImageOverlay, MapContainer } from "react-leaflet";
-
 import L from "leaflet";
-
 import "leaflet/dist/leaflet.css";
 import "leaflet-draw/dist/leaflet.draw.css";
 import "leaflet-draw";
@@ -14,6 +11,20 @@ const bounds = [
   [0, 0],
   [1000, 1000]
 ];
+
+function decodeToken(token) {
+  try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
+
+    return JSON.parse(jsonPayload);
+  } catch (e) {
+    return null;
+  }
+}
 
 export default function MapEditor() {
   const { id } = useParams(); 
@@ -31,7 +42,20 @@ export default function MapEditor() {
   
   const featureGroupRef = useRef();
 
-  // Função isolada para carregar a lista de mapas (para podermos atualizar após o upload)
+  // Verificação de acesso Admin
+  useEffect(() => {
+    const token = localStorage.getItem('jwt_token');
+    if (!token) {
+      navigate('/login');
+      return;
+    }
+    const user = decodeToken(token);
+    if (!user || user.role !== 'admin') {
+      alert("Acesso negado. Esta área é restrita a administradores.");
+      navigate('/map-viewer');
+    }
+  }, [navigate]);
+
   async function fetchMaps() {
     try {
       setLoading(true);
@@ -68,7 +92,6 @@ export default function MapEditor() {
     }
   }, [id]);
 
-  // Função para lidar com o envio do novo mapa (Upload)
   async function handleUpload(e) {
     e.preventDefault();
     if (!selectedFile) return alert("Selecione uma imagem primeiro!");
@@ -77,7 +100,6 @@ export default function MapEditor() {
       setUploading(true);
       const token = localStorage.getItem('jwt_token');
 
-      // Como vamos enviar um arquivo, precisamos usar FormData
       const formData = new FormData();
       formData.append("name", newName || "Mapa sem nome");
       formData.append("image", selectedFile);
@@ -85,15 +107,13 @@ export default function MapEditor() {
       await axios.post("http://localhost:3000/api/maps/upload-image", formData, {
         headers: {
           Authorization: `Bearer ${token}`,
-          "Content-Type": "multipart/form-data" // Informa ao axios que é um upload de arquivo
+          "Content-Type": "multipart/form-data"
         }
       });
 
       alert("Mapa criado com sucesso!");
       setNewName("");
       setSelectedFile(null);
-      
-      // Recarrega a lista de mapas para o novo aparecer na tela
       fetchMaps();
     } catch (err) {
       console.error("Erro no upload:", err);
@@ -106,7 +126,7 @@ export default function MapEditor() {
   async function saveFeatures() {
     try {
       const layers = featureGroupRef.current.toGeoJSON();
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('jwt_token');
 
       await axios.put(
         `http://localhost:3000/api/maps/${id}/features`,
@@ -153,15 +173,29 @@ export default function MapEditor() {
     });
   }
 
+  function handleLogout() {
+    localStorage.removeItem('jwt_token');
+    navigate('/login');
+  }
+
   if (loading) {
-    return <h1 style={{ padding: '20px' }}>Carregando...</h1>;
+    return (
+      <div style={{ background: '#0a0a1a', minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+        <h1 style={{ color: '#e0e0f0', fontFamily: 'sans-serif' }}>Carregando...</h1>
+      </div>
+    );
   }
 
   if (error) {
     return (
-      <div style={{ padding: '20px', color: 'red' }}>
-        <h2>Ops! {error}</h2>
-        <button onClick={() => navigate('/map-editor')}>Voltar para a Lista</button>
+      <div style={{ background: '#0a0a1a', minHeight: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', fontFamily: 'sans-serif', gap: '20px' }}>
+        <h2 style={{ color: '#ff6b6b' }}>Ops! {error}</h2>
+        <button 
+          onClick={() => navigate('/map-editor')}
+          style={{ padding: '10px 20px', background: '#007bff', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
+        >
+          Voltar para a Lista
+        </button>
       </div>
     );
   }
@@ -169,74 +203,104 @@ export default function MapEditor() {
   // TELA 1: LISTAGEM + FORMULÁRIO DE UPLOAD
   if (!id) {
     return (
-      <div style={{ display: 'flex', minHeight: '100vh', fontFamily: 'sans-serif' }}>
+      <div style={{ display: 'flex', minHeight: '100vh', background: '#0a0a1a', color: '#e0e0f0', fontFamily: "'Inter', sans-serif" }}>
         
         {/* BARRA LATERAL: Formulário de Upload */}
-        <div style={{ width: '300px', padding: '20px', borderRight: '1px solid #ccc', background: '#f5f5f5' }}>
-          <h3>➕ Criar Novo Mapa</h3>
-          <form onSubmit={handleUpload} style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '15px' }}>
-            <label style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+        <div style={{ width: '320px', padding: '30px', borderRight: '1px solid rgba(255, 255, 255, 0.1)', background: 'rgba(17, 17, 34, 0.75)', backdropFilter: 'blur(12px)', display: 'flex', flexDirection: 'column' }}>
+          <h3 style={{ fontSize: '18px', color: '#e0e0f0', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '24px' }}>➕ Criar Novo Mapa</h3>
+          
+          <form onSubmit={handleUpload} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <label style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '12px', color: '#888899', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
               Nome do Mapa:
               <input 
                 type="text" 
                 value={newName} 
                 onChange={(e) => setNewName(e.target.value)} 
                 placeholder="Ex: Bloco A, Campus..." 
-                style={{ padding: '6px' }}
+                style={{ padding: '12px', background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '8px', color: '#e0e0f0', outline: 'none' }}
+                required
               />
             </label>
 
-            <label style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <label style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '12px', color: '#888899', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
               Imagem do Mapa:
               <input 
                 type="file" 
                 accept="image/*" 
                 onChange={(e) => setSelectedFile(e.target.files[0])} 
-                style={{ padding: '4px 0' }}
+                style={{ padding: '8px 0', color: '#aaa', cursor: 'pointer' }}
+                required
               />
             </label>
 
             <button 
               type="submit" 
               disabled={uploading}
-              style={{ padding: '8px', background: '#007bff', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+              style={{ padding: '12px', background: 'linear-gradient(135deg, #4466ff 0%, #aa55ff 100%)', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: '700', cursor: 'pointer', boxShadow: '0 4px 12px rgba(85, 119, 255, 0.3)' }}
             >
               {uploading ? "Enviando..." : "Fazer Upload"}
             </button>
-            <button onClick={handleLogout}>Sair</button>
           </form>
+
+          <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <button 
+              onClick={() => navigate('/map-viewer')}
+              style={{ padding: '10px', background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', color: '#e0e0f0', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}
+            >
+              👁 Ir para o Visualizador
+            </button>
+            <button 
+              onClick={handleLogout}
+              style={{ padding: '10px', background: 'rgba(255, 68, 68, 0.1)', border: '1px solid rgba(255, 68, 68, 0.2)', color: '#ff6b6b', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}
+            >
+              Sair
+            </button>
+          </div>
         </div>
 
         {/* ÁREA PRINCIPAL: Grid de Mapas */}
-        <div style={{ flex: 1, padding: '20px' }}>
-          <h2>Selecione um mapa para editar:</h2>
+        <div style={{ flex: 1, padding: '40px', overflowY: 'auto' }}>
+          <div style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.1)', paddingBottom: '20px', marginBottom: '30px' }}>
+            <h2 style={{ margin: 0, fontSize: '28px', fontWeight: '700' }}>Painel do Administrador</h2>
+            <p style={{ margin: '4px 0 0 0', color: '#888899', fontSize: '14px' }}>Selecione um mapa abaixo para editar e posicionar pontos de interesse:</p>
+          </div>
+
           {mapList.length === 0 ? (
-            <p style={{ marginTop: '20px', color: '#666' }}>Nenhum mapa encontrado. Use o formulário ao lado para enviar o primeiro!</p>
+            <p style={{ marginTop: '20px', color: '#888899', fontStyle: 'italic' }}>Nenhum mapa encontrado. Use o formulário ao lado para enviar o primeiro!</p>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '15px', marginTop: '20px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '24px' }}>
               {mapList.map((map) => (
                 <div 
                   key={map.id} 
                   onClick={() => navigate(`/map-editor/${map.id}`)}
                   style={{
-                    border: '1px solid #ccc',
-                    borderRadius: '8px',
-                    padding: '15px',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    borderRadius: '12px',
+                    padding: '16px',
                     cursor: 'pointer',
-                    textAlign: 'center',
-                    background: '#f9f9f9',
-                    transition: '0.2s'
+                    textAlign: 'left',
+                    background: 'rgba(17, 17, 34, 0.6)',
+                    backdropFilter: 'blur(8px)',
+                    boxShadow: '0 4px 15px rgba(0,0,0,0.2)',
+                    transition: 'transform 0.2s, border-color 0.2s'
                   }}
-                  onMouseOver={(e) => e.currentTarget.style.background = '#eef'}
-                  onMouseOut={(e) => e.currentTarget.style.background = '#f9f9f9'}
+                  onMouseOver={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-4px)';
+                    e.currentTarget.style.borderColor = '#5577ff';
+                  }}
+                  onMouseOut={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                  }}
                 >
                   <img 
                     src={`http://localhost:3000${map.imageUrl}`} 
                     alt={map.name} 
-                    style={{ width: '100%', height: '120px', objectFit: 'cover', borderRadius: '4px' }} 
+                    style={{ width: '100%', height: '130px', objectFit: 'cover', borderRadius: '8px', marginBottom: '12px' }} 
                   />
-                  <h4 style={{ margin: '10px 0 0 0' }}>{map.name}</h4>
-                  <small style={{ color: '#777' }}>ID: {map.id}</small>
+                  <h4 style={{ margin: '0 0 4px 0', color: '#e0e0f0', fontSize: '16px', fontWeight: '600' }}>{map.name}</h4>
+                  <p style={{ margin: '0 0 8px 0', color: '#888899', fontSize: '12px' }}>Criado por: {map.creatorName || 'Admin'}</p>
+                  <small style={{ color: '#5577ff', fontFamily: "'JetBrains Mono', monospace", fontSize: '11px' }}>ID: {map.id}</small>
                 </div>
               ))}
             </div>
@@ -247,37 +311,40 @@ export default function MapEditor() {
     );
   }
 
-  function handleLogout() {
-        localStorage.removeItem('jwt_token');
-        window.location.href = '/login';
-    }
-
-  // TELA 2: EDITOR DO LEAFLET (Mantido igual)
+  // TELA 2: EDITOR DO LEAFLET
   return (
-    <div>
-      <div style={{ padding: '10px', background: '#f0f0f0', display: 'flex', gap: '10px' }}>
-        <button onClick={() => navigate('/map-editor')} style={{ padding: '8px 16px', cursor: 'pointer' }}>
+    <div style={{ background: '#0a0a1a', minHeight: '100vh', color: '#e0e0f0', fontFamily: "'Inter', sans-serif" }}>
+      <div style={{ padding: '15px 30px', background: 'rgba(17, 17, 34, 0.85)', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', display: 'flex', gap: '15px', alignItems: 'center' }}>
+        <button 
+          onClick={() => navigate('/map-editor')} 
+          style={{ padding: '10px 20px', background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', color: '#e0e0f0', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}
+        >
           ⬅ Voltar para a Lista
         </button>
-        <button onClick={saveFeatures} style={{ padding: '8px 16px', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
+        <button 
+          onClick={saveFeatures} 
+          style={{ padding: '10px 20px', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', boxShadow: '0 4px 12px rgba(40, 167, 69, 0.3)' }}
+        >
           💾 Salvar Alterações
         </button>
-        <span style={{ marginLeft: 'auto', alignSelf: 'center', fontWeight: 'bold' }}>Editando: {mapData.name}</span>
+        <span style={{ marginLeft: 'auto', fontWeight: 'bold', fontSize: '14px', color: '#888899' }}>
+          Editando: <span style={{ color: '#e0e0f0' }}>{mapData?.name}</span> <span style={{ color: 'rgba(255,255,255,0.15)', margin: '0 8px' }}>|</span> Criador: <span style={{ color: '#5577ff' }}>{mapData?.creatorName || 'Admin'}</span>
+        </span>
       </div>
 
       <MapContainer
         crs={L.CRS.Simple}
         bounds={bounds}
-        style={{ height: '85vh' }}
+        style={{ height: '88vh' }}
         whenCreated={onMapCreated}
       >
         <ImageOverlay
-          url={`http://localhost:3000${mapData.imageUrl}`}
+          url={`http://localhost:3000${mapData?.imageUrl}`}
           bounds={bounds}
         />
 
         <FeatureGroup ref={featureGroupRef}>
-          <GeoJSON key={id} data={mapData.features} />
+          <GeoJSON key={id} data={mapData?.features} />
         </FeatureGroup>
       </MapContainer>
     </div>
