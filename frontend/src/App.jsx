@@ -2,7 +2,6 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Callback from './pages/Callback';
-import EditPlantas from './pages/EditPlantas.jsx';
 import MapViewer from './pages/MapViewer.jsx';
 import MapEditor from './pages/MapEditor.jsx';
 
@@ -16,8 +15,7 @@ function App() {
         <Route path="/callback" element={<Callback />} />
         
         {/* Rotas do Sistema */}
-        <Route path="/edit-plantas" element={<EditPlantas />} />
-        
+      
         {/* Viewer: Aceita tanto a galeria (/map-viewer) quanto o mapa aberto (/map-viewer/123) */}
         <Route path="/map-viewer" element={<MapViewer />} />
         <Route path="/map-viewer/:id" element={<MapViewer />} />
