@@ -1,0 +1,63 @@
+import * as authService from '../services/auth.service.js';
+
+const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+const port        = process.env.PORT          || 3000;
+
+export const googleRedirect = (_req, res) => {
+  const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${process.env.GOOGLE_CLIENT_ID}`
+    + `&redirect_uri=http://localhost:${port}/auth/google/callback`
+    + `&response_type=code&scope=profile email`;
+  res.redirect(url);
+};
+
+export const googleCallback = async (req, res) => {
+  try {
+    const redirectUrl = await authService.handleGoogleCallback(req.query.code);
+    res.redirect(redirectUrl);
+  } catch (err) {
+    console.error(err);
+    res.redirect(`${frontendUrl}/login?error=auth_failed`);
+  }
+};
+
+export const microsoftRedirect = (_req, res) => {
+  const url = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${process.env.MS_CLIENT_ID}`
+    + `&response_type=code`
+    + `&redirect_uri=http://localhost:${port}/auth/microsoft/callback`
+    + `&response_mode=query&scope=user.read`;
+  res.redirect(url);
+};
+
+export const microsoftCallback = async (req, res) => {
+  try {
+    const redirectUrl = await authService.handleMicrosoftCallback(req.query.code);
+    res.redirect(redirectUrl);
+  } catch (err) {
+    console.error(err);
+    res.redirect(`${frontendUrl}/login?error=auth_failed`);
+  }
+};
+
+export const register = (req, res) => {
+  const { name, email, password } = req.body;
+  if (!name || !email || !password)
+    return res.status(400).json({ error: 'Todos os campos (nome, e-mail e senha) são obrigatórios.' });
+
+  try {
+    res.json(authService.register({ name, email, password }));
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message });
+  }
+};
+
+export const login = (req, res) => {
+  const { email, password } = req.body;
+  if (!email || !password)
+    return res.status(400).json({ error: 'E-mail e senha são obrigatórios.' });
+
+  try {
+    res.json(authService.login({ email, password }));
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message });
+  }
+};

@@ -230,7 +230,7 @@ h3 {
 
 /* Leaflet Overrides */
 .leaflet-container {
-    background: #5162ae !important;
+    background: #c0c0c0 !important;
 }
 
 .leaflet-popup-content-wrapper {
