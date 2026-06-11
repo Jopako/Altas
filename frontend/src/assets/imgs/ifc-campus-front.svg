@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" role="img" aria-label="IFC Campus Videira (placeholder)">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#dff0ff"/>
+      <stop offset="1" stop-color="#b8d7ff"/>
+    </linearGradient>
+    <linearGradient id="grass" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#60c06b"/>
+      <stop offset="1" stop-color="#2f9a45"/>
+    </linearGradient>
+    <linearGradient id="shadow" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0b1b3b" stop-opacity="0.18"/>
+      <stop offset="1" stop-color="#0b1b3b" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="800" fill="url(#sky)"/>
+  <rect y="560" width="1200" height="240" fill="url(#grass)"/>
+
+  <rect x="120" y="210" width="430" height="420" rx="18" fill="#1f8b58"/>
+  <rect x="160" y="260" width="170" height="110" rx="8" fill="#d8ecff" opacity="0.9"/>
+  <rect x="350" y="260" width="160" height="110" rx="8" fill="#d8ecff" opacity="0.9"/>
+  <rect x="160" y="400" width="350" height="90" rx="8" fill="#d8ecff" opacity="0.9"/>
+  <rect x="140" y="220" width="390" height="18" rx="9" fill="#176b44" opacity="0.7"/>
+
+  <rect x="560" y="250" width="520" height="380" rx="18" fill="#f5f7fb"/>
+  <rect x="560" y="250" width="85" height="380" fill="#e6ebf5"/>
+  <rect x="690" y="300" width="350" height="70" rx="10" fill="#cfe4ff" opacity="0.85"/>
+  <rect x="690" y="410" width="350" height="70" rx="10" fill="#cfe4ff" opacity="0.85"/>
+  <rect x="690" y="520" width="240" height="70" rx="10" fill="#cfe4ff" opacity="0.85"/>
+
+  <path d="M250 640c110-28 290-28 410 0 110 25 290 25 410 0v60H250v-60Z" fill="#ffffff" opacity="0.2"/>
+  <path d="M120 650c190-40 380-40 570 0 190 40 380 40 510 0v70H120v-70Z" fill="#0b1b3b" opacity="0.08"/>
+  <rect x="520" y="560" width="680" height="240" fill="url(#shadow)"/>
+
+  <g opacity="0.95">
+    <rect x="60" y="70" width="1080" height="62" rx="18" fill="#2f5ea8" opacity="0.08"/>
+    <text x="110" y="112" font-family="ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial" font-size="28" font-weight="700" fill="#1b2f55" opacity="0.7">
+      IFC • Campus Videira (imagem ilustrativa)
+    </text>
+  </g>
+</svg>
+

@@ -1,1 +1,17 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect x="4" y="4" width="56" height="56" rx="14" fill="#2563EB" />
+  <g stroke="white" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Side chevrons -->
+    <path d="M18.5 25.5L11.5 32L18.5 38.5" />
+    <path d="M45.5 25.5L52.5 32L45.5 38.5" />
 
+    <!-- Light beams -->
+    <path d="M25.8 22.5L21.2 19.2" />
+    <path d="M38.2 22.5L42.8 19.2" />
+
+    <!-- Lighthouse -->
+    <path d="M32 16L26.5 22.5H37.5L32 16Z" />
+    <path d="M28.5 22.5L25.5 49.5H38.5L35.5 22.5H28.5Z" />
+    <path d="M24 49.5H40" />
+  </g>
+</svg>

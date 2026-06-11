@@ -1,0 +1,36 @@
+```svg
+<svg width="1200" height="400" viewBox="0 0 1200 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="400" fill="white"/>
+
+  <!-- Lighthouse A -->
+  <polygon points="120,330 210,120 300,330" fill="#062B5B"/>
+
+  <!-- Door -->
+  <path d="M195 330 Q195 280 210 280 Q225 280 225 330" fill="white"/>
+
+  <!-- White stripes -->
+  <polygon points="165,240 250,210 258,240 175,270" fill="white"/>
+  <polygon points="150,185 235,155 243,185 160,215" fill="white"/>
+
+  <!-- Lighthouse top -->
+  <rect x="180" y="90" width="60" height="50" fill="#062B5B"/>
+  <polygon points="170,90 210,60 250,90" fill="#062B5B"/>
+
+  <!-- Light -->
+  <rect x="192" y="100" width="36" height="28" fill="#F59E0B"/>
+
+  <!-- Light beams -->
+  <polygon points="192,110 40,140 192,130" fill="#FCD34D" fill-opacity="0.5"/>
+  <polygon points="228,110 380,140 228,130" fill="#FCD34D" fill-opacity="0.5"/>
+
+  <!-- ALTAS text -->
+  <text x="360" y="285"
+        font-family="Arial, Helvetica, sans-serif"
+        font-size="220"
+        fill="#062B5B"
+        font-weight="500"
+        letter-spacing="8">
+    LTAS
+  </text>
+</svg>
+```
