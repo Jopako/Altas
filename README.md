@@ -100,3 +100,6 @@ O projeto está totalmente conteinerizado com **Docker**, o que elimina a necess
    ```bash
    docker compose down
    ```
+
+### Documentação: Artigo 
+  Acesso ao documento modelo do Projeto ALTAS.
