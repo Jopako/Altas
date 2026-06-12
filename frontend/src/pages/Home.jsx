@@ -245,7 +245,7 @@ function Home() {
         <div className="flex items-center gap-3">
           <button
             className="bg-[#F59E0B] text-white text-[12px] font-semibold px-5 py-2 rounded-full hover:bg-[#d97706] transition-colors cursor-pointer"
-            onClick={() => navigate("/Login")}
+            onClick={() => navigate("/login")}
             type="button"
           >
             LOGIN
