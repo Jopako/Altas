@@ -4,6 +4,8 @@ import Register from './pages/Register';
 import Callback from './pages/Callback';
 import MapViewer from './pages/MapViewer.jsx';
 import MapEditor from './pages/MapEditor.jsx';
+import MapPoiEditor from './pages/MapPoiEditor.jsx';
+import Favorites from './pages/Favorites.jsx';
 import Home from './pages/Home.jsx';
 import ConhecaAltas from './pages/ConhecaAltas.jsx';
 import TeamPage from './pages/TeamPage.jsx';
@@ -21,7 +23,9 @@ function App() {
         <Route path="/map-viewer" element={<MapViewer />} />
         <Route path="/map-viewer/:id" element={<MapViewer />} />
         <Route path="/map-editor" element={<MapEditor />} />
-        <Route path="/map-editor/:id" element={<MapEditor />} />
+        <Route path="/map-editor/:id" element={<MapPoiEditor />} />
+        <Route path="/map-editor/:id/pontos" element={<MapPoiEditor />} />
+        <Route path="/favoritos" element={<Favorites />} />
         <Route path="/ConhecaAltas" element={<ConhecaAltas />} />
         <Route path="/TeamPage" element={<TeamPage />} />
         <Route path="/FaleConosco" element={<FaleConosco />} />

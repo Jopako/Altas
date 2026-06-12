@@ -1,4 +1,5 @@
 import * as authService from '../services/auth.service.js';
+import { getUserFavorites, toggleUserFavorite } from '../services/user.service.js';
 
 const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
 const port        = process.env.PORT          || 3000;
@@ -57,6 +58,34 @@ export const login = (req, res) => {
 
   try {
     res.json(authService.login({ email, password }));
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message });
+  }
+};
+
+export const getFavorites = (req, res) => {
+  if (req.user?.role === 'admin') return res.json({ favorites: [] });
+
+  try {
+    const favorites = getUserFavorites(req.user.email);
+    res.json({ favorites });
+  } catch (err) {
+    res.status(err.status || 500).json({ error: err.message });
+  }
+};
+
+export const toggleFavorite = (req, res) => {
+  if (req.user?.role === 'admin') {
+    return res.status(403).json({ error: 'Administradores não usam favoritos.' });
+  }
+
+  const { mapId, poiId } = req.body;
+  if (!mapId || !poiId)
+    return res.status(400).json({ error: 'mapId e poiId são obrigatórios.' });
+
+  try {
+    const favorites = toggleUserFavorite(req.user.email, mapId, poiId);
+    res.json({ favorites });
   } catch (err) {
     res.status(err.status || 500).json({ error: err.message });
   }

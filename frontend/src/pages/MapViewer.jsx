@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import {
@@ -36,6 +36,12 @@ export default function MapViewer() {
   const [mapList, setMapList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [favorites, setFavorites] = useState([]);
+  const favoritesRef = useRef([]);
+
+  useEffect(() => {
+    favoritesRef.current = favorites;
+  }, [favorites]);
 
   // Verificação de token
   useEffect(() => {
@@ -44,6 +50,26 @@ export default function MapViewer() {
       navigate('/login');
     }
   }, [navigate]);
+
+  // Carregar favoritos apenas para visitantes.
+  useEffect(() => {
+    const token = localStorage.getItem('jwt_token');
+    const decoded = token ? decodeToken(token) : null;
+    if (!token || decoded?.role === 'admin') {
+      setFavorites([]);
+      return;
+    }
+
+    axios.get('http://localhost:3000/api/auth/favorites', {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    .then(res => {
+      setFavorites(res.data.favorites || []);
+    })
+    .catch(err => {
+      console.error('Erro ao carregar favoritos:', err);
+    });
+  }, [id]);
 
   useEffect(() => {
     if (id) {
@@ -79,6 +105,28 @@ export default function MapViewer() {
       fetchMaps();
     }
   }, [id]);
+
+  async function toggleFavorite(poiId) {
+    const token = localStorage.getItem('jwt_token');
+    const decoded = token ? decodeToken(token) : null;
+    if (!token || !mapData || decoded?.role === 'admin') return null;
+
+    try {
+      const res = await axios.post('http://localhost:3000/api/auth/favorites/toggle', {
+        mapId: mapData.id,
+        poiId
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const nextFavorites = res.data.favorites || [];
+      favoritesRef.current = nextFavorites;
+      setFavorites(nextFavorites);
+      return nextFavorites;
+    } catch (err) {
+      console.error('Erro ao favoritar POI:', err);
+      return null;
+    }
+  }
 
   function handleLogout() {
     localStorage.removeItem('jwt_token');
@@ -122,12 +170,19 @@ export default function MapViewer() {
           </div>
           
           <div style={{ display: 'flex', gap: '12px' }}>
-            {isAdmin && (
+            {isAdmin ? (
               <button 
                 onClick={() => navigate('/map-editor')}
                 style={{ padding: '10px 20px', background: 'linear-gradient(135deg, #00b4db 0%, #0083b0 100%)', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', boxShadow: '0 4px 12px rgba(0, 180, 219, 0.3)' }}
               >
-                ➕ Criar Novo Mapa
+                ➕ Novo Mapa/Ponto de Interesse
+              </button>
+            ) : (
+              <button 
+                onClick={() => navigate('/favoritos')}
+                style={{ padding: '10px 20px', background: 'linear-gradient(135deg, #ff9900 0%, #ff5500 100%)', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', boxShadow: '0 4px 12px rgba(255, 153, 0, 0.3)' }}
+              >
+                ⭐ Favoritos
               </button>
             )}
             <button 
@@ -255,14 +310,52 @@ export default function MapViewer() {
             key={id} 
             data={mapData?.features}
             onEachFeature={(feature, layer) => {
-              const props = feature.properties;
+              const props = feature.properties || {};
+              const poiId = props.id || props.name || Math.random().toString(36).substr(2, 9);
+              const name = props.name || 'Sem nome';
+              const desc = props.description || 'Sem descrição';
+              const photoHtml = props.photoUrl 
+                ? `<img src="http://localhost:3000${props.photoUrl}" style="width: 100%; max-height: 150px; object-fit: cover; border-radius: 6px; margin-top: 8px; display: block;" />`
+                : '';
+
+              const favoriteButtonHtml = isAdmin
+                ? ''
+                : `<button id="btn-fav-${poiId}" style="margin-top:10px; width:100%; padding:6px; background:#ff9900; color:#fff; border:none; border-radius:4px; font-weight:bold; cursor:pointer; font-size:12px; display:flex; align-items:center; justify-content:center; gap:4px; transition: background 0.2s;">☆ Favoritar</button>`;
 
               layer.bindPopup(`
-                <div style="font-family: 'Inter', sans-serif; min-width: 150px; color: #fff;">
-                  <h3 style="margin: 0 0 6px 0; color: #5577ff; font-size: 15px; font-weight: 700;">${props?.name || 'Sem nome'}</h3>
-                  <p style="margin: 0; color: #888899; font-size: 12px; line-height: 1.4;">${props?.description || 'Nenhuma descrição fornecida.'}</p>
+                <div style="font-family: 'Inter', sans-serif; min-width: 180px; color: #fff;">
+                  <h3 style="margin: 0 0 6px 0; color: #5577ff; font-size: 15px; font-weight: 700;">${name}</h3>
+                  <p style="margin: 0 0 8px 0; color: #888899; font-size: 12px; line-height: 1.4;">${desc}</p>
+                  ${photoHtml}
+                  ${favoriteButtonHtml}
                 </div>
               `);
+
+              if (!isAdmin) {
+                layer.on('popupopen', () => {
+                  setTimeout(() => {
+                    const btn = document.getElementById(`btn-fav-${poiId}`);
+                    if (!btn) return;
+
+                    const key = `${id}:${poiId}`;
+                    const renderFavoriteState = (favList) => {
+                      const isFav = favList.includes(key);
+                      btn.innerHTML = isFav ? '⭐ Remover Favorito' : '☆ Favoritar';
+                      btn.style.background = isFav ? 'rgba(255, 0, 0, 0.6)' : '#ff9900';
+                    };
+
+                    renderFavoriteState(favoritesRef.current);
+                    btn.onclick = async (event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      btn.disabled = true;
+                      const nextFavorites = await toggleFavorite(poiId);
+                      if (nextFavorites) renderFavoriteState(nextFavorites);
+                      btn.disabled = false;
+                    };
+                  }, 50);
+                });
+              }
             }}
           />
         </MapContainer>

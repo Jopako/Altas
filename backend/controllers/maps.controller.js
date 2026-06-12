@@ -8,6 +8,7 @@ export const uploadImage = (req, res) => {
       name:        req.body.name,
       filename:    req.file.filename,
       creatorName: req.user?.name || req.user?.email || 'Administrador',
+      creatorEmail: req.user?.email,
     });
     res.json(map);
   } catch (err) {
@@ -35,4 +36,9 @@ export const saveFeatures = (req, res) => {
   const ok = mapsService.saveFeatures(req.params.id, req.body);
   if (!ok) return res.status(404).json({ error: 'Mapa não encontrado.' });
   res.json({ success: true });
+};
+
+export const uploadPoiPhoto = (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'Nenhuma imagem enviada.' });
+  res.json({ imageUrl: `/uploads/images/${req.file.filename}` });
 };

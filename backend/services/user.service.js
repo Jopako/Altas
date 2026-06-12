@@ -39,11 +39,40 @@ export function saveOrUpdateUser(profile) {
 
   if (idx >= 0) {
     if (users[idx].password) userData.password = users[idx].password;
+    if (users[idx].favorites) userData.favorites = users[idx].favorites;
     users[idx] = userData;
   } else {
+    userData.favorites = [];
     users.push(userData);
   }
 
   writeUsers(users);
   return userData;
+}
+
+export function getUserFavorites(email) {
+  const users = readUsers();
+  const user = users.find((u) => u.email.toLowerCase() === email.toLowerCase());
+  return user?.favorites || [];
+}
+
+export function toggleUserFavorite(email, mapId, poiId) {
+  const users = readUsers();
+  const idx = users.findIndex((u) => u.email.toLowerCase() === email.toLowerCase());
+  if (idx < 0) throw Object.assign(new Error('Usuário não encontrado'), { status: 404 });
+
+  if (!users[idx].favorites) {
+    users[idx].favorites = [];
+  }
+
+  const favStr = `${mapId}:${poiId}`;
+  const favIdx = users[idx].favorites.indexOf(favStr);
+  if (favIdx >= 0) {
+    users[idx].favorites.splice(favIdx, 1);
+  } else {
+    users[idx].favorites.push(favStr);
+  }
+
+  writeUsers(users);
+  return users[idx].favorites;
 }

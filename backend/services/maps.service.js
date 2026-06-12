@@ -11,13 +11,14 @@ fs.mkdirSync(mapsDir,   { recursive: true });
 
 const mapPath = (id) => path.join(mapsDir, `${id}.json`);
 
-export function createMap({ name, filename, creatorName }) {
+export function createMap({ name, filename, creatorName, creatorEmail }) {
   const id = Date.now().toString();
   const data = {
     id,
     name:        name || 'Mapa sem nome',
     imageUrl:    `/uploads/images/${filename}`,
     creatorName,
+    creatorEmail: creatorEmail || '',
     features:    { type: 'FeatureCollection', features: [] },
     createdAt:   new Date().toISOString(),
   };

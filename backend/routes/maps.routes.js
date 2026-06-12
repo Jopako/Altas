@@ -15,9 +15,10 @@ const upload = multer({
 
 const router = Router();
 
-router.post('/upload-image', authMiddleware, adminMiddleware, upload.single('image'), mapsCtrl.uploadImage);
-router.get('/',              mapsCtrl.listMaps);
-router.get('/:id',           mapsCtrl.getMap);
-router.put('/:id/features',  authMiddleware, adminMiddleware, mapsCtrl.saveFeatures);
+router.post('/upload-image',     authMiddleware, adminMiddleware, upload.single('image'), mapsCtrl.uploadImage);
+router.post('/upload-poi-photo', authMiddleware, adminMiddleware, upload.single('image'), mapsCtrl.uploadPoiPhoto);
+router.get('/',                  mapsCtrl.listMaps);
+router.get('/:id',               mapsCtrl.getMap);
+router.put('/:id/features',      authMiddleware, adminMiddleware, mapsCtrl.saveFeatures);
 
 export default router;
