@@ -1,47 +1,70 @@
-import fs from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { ObjectId } from 'mongodb';
+import { getDB } from '../config/database.js';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const mapsDir   = path.join(__dirname, '../uploads/maps');
-const imagesDir = path.join(__dirname, '../uploads/images');
+function mapsCollection() {
+  return getDB().collection('mapas');
+}
 
-fs.mkdirSync(imagesDir, { recursive: true });
-fs.mkdirSync(mapsDir,   { recursive: true });
-
-const mapPath = (id) => path.join(mapsDir, `${id}.json`);
-
-export function createMap({ name, filename, creatorName, creatorEmail }) {
-  const id = Date.now().toString();
-  const data = {
-    id,
-    name:        name || 'Mapa sem nome',
-    imageUrl:    `/uploads/images/${filename}`,
+export async function createMap({
+  name,
+  filename,
+  creatorName,
+  creatorEmail
+}) {
+  const map = {
+    name: name || 'Mapa sem nome',
+    imageUrl: `/uploads/images/${filename}`,
     creatorName,
     creatorEmail: creatorEmail || '',
-    features:    { type: 'FeatureCollection', features: [] },
-    createdAt:   new Date().toISOString(),
+    features: {
+      type: 'FeatureCollection',
+      features: []
+    },
+    createdAt: new Date()
   };
-  fs.writeFileSync(mapPath(id), JSON.stringify(data, null, 2));
-  return data;
+
+  const result = await mapsCollection().insertOne(map);
+
+  return {
+    id: result.insertedId.toString(),
+    ...map
+  };
 }
 
-export function listMaps() {
-  return fs.readdirSync(mapsDir)
-    .map((f) => JSON.parse(fs.readFileSync(path.join(mapsDir, f), 'utf8')));
+export async function listMaps() {
+  const maps = await mapsCollection()
+    .find({})
+    .sort({ createdAt: -1 })
+    .toArray();
+
+  return maps.map(map => ({
+    ...map,
+    id: map._id.toString()
+  }));
 }
 
-export function getMap(id) {
-  const fp = mapPath(id);
-  if (!fs.existsSync(fp)) return null;
-  return JSON.parse(fs.readFileSync(fp, 'utf8'));
+export async function getMap(id) {
+  const map = await mapsCollection().findOne({
+    _id: new ObjectId(id)
+  });
+
+  if (!map) return null;
+
+  return {
+    ...map,
+    id: map._id.toString()
+  };
 }
 
-export function saveFeatures(id, features) {
-  const fp = mapPath(id);
-  if (!fs.existsSync(fp)) return false;
-  const data = JSON.parse(fs.readFileSync(fp, 'utf8'));
-  data.features = features;
-  fs.writeFileSync(fp, JSON.stringify(data, null, 2));
-  return true;
+export async function saveFeatures(id, features) {
+  const result = await mapsCollection().updateOne(
+    {
+      _id: new ObjectId(id)
+    },
+    {
+      $set: { features }
+    }
+  );
+
+  return result.matchedCount > 0;
 }
