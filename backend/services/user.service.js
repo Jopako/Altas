@@ -1,78 +1,106 @@
-import fs from 'node:fs';
-import path from 'node:path';
 import crypto from 'node:crypto';
-import { fileURLToPath } from 'node:url';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DB_FILE = path.join(__dirname, '../users.json');
+import { getDB } from '../config/database.js';
 
 const ADMIN_EMAILS = process.env.ADMIN_EMAILS
-  ? process.env.ADMIN_EMAILS.split(',').map((e) => e.trim().toLowerCase())
+  ? process.env.ADMIN_EMAILS.split(',').map(e => e.trim().toLowerCase())
   : [];
-  
+
 export const hashPassword = (pw) =>
   crypto.createHash('sha256').update(pw).digest('hex');
 
-export function readUsers() {
-  if (!fs.existsSync(DB_FILE)) return [];
-  return JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
-}
-
-export function writeUsers(users) {
-  fs.writeFileSync(DB_FILE, JSON.stringify(users, null, 2));
-}
-
 export function resolveRole(email) {
   const e = email.toLowerCase();
+
   return ADMIN_EMAILS.includes(e) || e.endsWith('@ifc.edu.br')
     ? 'admin'
     : 'visitante';
 }
 
-export function saveOrUpdateUser(profile) {
-  const users = readUsers();
-  const email = profile.email.toLowerCase();
-  const role  = resolveRole(email);
-  const idx   = users.findIndex((u) => u.email.toLowerCase() === email);
-
-  const userData = { email: profile.email, name: profile.name, role };
-
-  if (idx >= 0) {
-    if (users[idx].password) userData.password = users[idx].password;
-    if (users[idx].favorites) userData.favorites = users[idx].favorites;
-    users[idx] = userData;
-  } else {
-    userData.favorites = [];
-    users.push(userData);
-  }
-
-  writeUsers(users);
-  return userData;
+function usersCollection() {
+  return getDB().collection('usuarios');
 }
 
-export function getUserFavorites(email) {
-  const users = readUsers();
-  const user = users.find((u) => u.email.toLowerCase() === email.toLowerCase());
+export async function findUserByEmail(email) {
+  return usersCollection().findOne({
+    email: email.toLowerCase()
+  });
+}
+
+export async function createUser(user) {
+  await usersCollection().insertOne(user);
+  return user;
+}
+
+export async function saveOrUpdateUser(profile) {
+  const email = profile.email.toLowerCase();
+  const role = resolveRole(email);
+
+  const existing = await findUserByEmail(email);
+
+  if (existing) {
+    await usersCollection().updateOne(
+      { email },
+      {
+        $set: {
+          name: profile.name,
+          role
+        }
+      }
+    );
+
+    return {
+      ...existing,
+      name: profile.name,
+      role
+    };
+  }
+
+  const user = {
+    email,
+    name: profile.name,
+    role,
+    favorites: []
+  };
+
+  await createUser(user);
+
+  return user;
+}
+
+export async function getUserFavorites(email) {
+  const user = await findUserByEmail(email);
+
   return user?.favorites || [];
 }
 
-export function toggleUserFavorite(email, mapId, poiId) {
-  const users = readUsers();
-  const idx = users.findIndex((u) => u.email.toLowerCase() === email.toLowerCase());
-  if (idx < 0) throw Object.assign(new Error('Usuário não encontrado'), { status: 404 });
+export async function toggleUserFavorite(email, mapId, poiId) {
+  const user = await findUserByEmail(email);
 
-  if (!users[idx].favorites) {
-    users[idx].favorites = [];
+  if (!user) {
+    throw Object.assign(
+      new Error('Usuário não encontrado'),
+      { status: 404 }
+    );
   }
 
-  const favStr = `${mapId}:${poiId}`;
-  const favIdx = users[idx].favorites.indexOf(favStr);
-  if (favIdx >= 0) {
-    users[idx].favorites.splice(favIdx, 1);
+  const favorites = user.favorites || [];
+
+  const favorite = `${mapId}:${poiId}`;
+
+  const index = favorites.indexOf(favorite);
+
+  if (index >= 0) {
+    favorites.splice(index, 1);
   } else {
-    users[idx].favorites.push(favStr);
+    favorites.push(favorite);
   }
 
-  writeUsers(users);
-  return users[idx].favorites;
+  await usersCollection().updateOne(
+    { email: email.toLowerCase() },
+    {
+      $set: { favorites }
+    }
+  );
+
+  return favorites;
 }
