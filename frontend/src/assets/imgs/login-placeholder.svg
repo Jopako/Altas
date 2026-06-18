@@ -1,0 +1,19 @@
+<svg width="520" height="420" viewBox="0 0 520 420" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Ilustração de mapa com pinos para login">
+  <rect x="40" y="30" width="440" height="300" rx="24" fill="#E6F0FF" stroke="#81B3F1" stroke-width="6"/>
+  <rect x="80" y="70" width="360" height="220" rx="18" fill="#F1F8FF" stroke="#B0D4FF" stroke-width="4"/>
+  <rect x="110" y="100" width="80" height="50" rx="10" fill="#C5E3A6"/>
+  <rect x="210" y="100" width="120" height="50" rx="10" fill="#DFF5C7"/>
+  <rect x="110" y="170" width="90" height="40" rx="8" fill="#A6D6A7"/>
+  <rect x="240" y="170" width="130" height="40" rx="8" fill="#C5E3A6"/>
+  <rect x="110" y="230" width="260" height="40" rx="10" fill="#7FB1E2"/>
+  <circle cx="175" cy="155" r="18" fill="#FFFFFF"/>
+  <path d="M175 140C181.627 140 187 145.373 187 152C187 161.7 175 178 175 178C175 178 163 161.7 163 152C163 145.373 168.373 140 175 140Z" fill="#F59E0B"/>
+  <circle cx="175" cy="152" r="7" fill="#FFFFFF"/>
+  <circle cx="320" cy="220" r="18" fill="#FFFFFF"/>
+  <path d="M320 205C326.627 205 332 210.373 332 217C332 226.7 320 243 320 243C320 243 308 226.7 308 217C308 210.373 313.373 205 320 205Z" fill="#EF4444"/>
+  <circle cx="320" cy="217" r="7" fill="#FFFFFF"/>
+  <rect x="180" y="270" width="160" height="24" rx="12" fill="#D4E5FF"/>
+  <rect x="200" y="310" width="120" height="50" rx="25" fill="#5D89F7"/>
+  <path d="M260 350V390" stroke="#3569C6" stroke-width="12" stroke-linecap="round"/>
+  <rect x="235" y="390" width="50" height="24" rx="12" fill="#3569C6"/>
+</svg>
