@@ -15,25 +15,26 @@ Desenvolver uma aplicação web de arquitetura generalista capaz de processar pl
 ## Funcionalidades Principais:
 Motor de Ingestão e Processamento de Dados:
 
-- Conversão automatizada de plantas em formato PDF para formatos vetoriais (SVG ou GeoJSON).
-- Extração de elementos geométricos para a criação de camadas navegáveis.
-- Sistema de georreferenciamento interno para alinhar as coordenadas da planta ao sistema de navegação digital.
+- Upload de imagens de planta para uso como base visual do mapa interativo.
+- Organização dos mapas em camadas editáveis sobre a imagem da planta.
+- Persistência das edições em GeoJSON para manter pontos e áreas salvos por mapa.
 
 Módulo Administrativo e Edição:
 
-- Interface intuitiva para que gestores possam cadastrar e editar Pontos de Interesse (POIs), como salas de aula, laboratórios e banheiros.
-- Ferramentas de limpeza visual para ocultar elementos técnicos irrelevantes da planta original e destacar rotas de circulação.
-- Gestão de pavimentos, permitindo a visualização alternada de diferentes andares do mesmo edifício.
+- Interface administrativa para cadastrar mapas e editar pontos de interesse diretamente sobre a planta.
 - Separação do fluxo administrativo em duas etapas: uma tela para criação/listagem de mapas e outra para edição de pontos de interesse e áreas mapeadas.
 - Criação de POIs por ponto específico ou por área livre desenhada sobre a planta, com persistência em GeoJSON.
-- Sistema de favoritos restrito a visitantes, com bloqueio explícito para administradores.
-  
+
 Interface de Navegação Interativa (Frontend):
 
 - Visualização dinâmica do mapa com controles de zoom e movimentação (pan), utilizando a biblioteca Leaflet.
-- Sistema de busca rápida para localização de setores, servidores ou serviços específicos.
-- Filtro de Acessibilidade: Camada específica para visualização de rampas, elevadores e rotas adaptadas.
 - Prototipagem rápida de interfaces e funções lógicas, permitindo validações constantes e ajustes de usabilidade sem ciclos extensos de desenvolvimento manual.
+
+Favoritos:
+
+- Usuários visitantes podem favoritar pontos de interesse na visualização do mapa.
+- Administradores não usam a lista de favoritos.
+- Os favoritos são salvos no backend como pares `mapId:poiId` por usuário.
   
 Manutenção e Autonomia:
 
@@ -141,14 +142,8 @@ Isso permite publicar o frontend e a API no mesmo host sem depender de CORS entr
 O fluxo de POIs foi dividido em:
 
 - `MapEditor` fica responsável por criar mapas e listar os mapas do administrador.
-- `MapPoiEditor` recebe um mapa existente e cuida da criação/edição de pontos específicos e áreas desenhadas na planta.
+- `MapPoiEditor` recebe um mapa existente, carrega a imagem da planta e permite criar pontos específicos ou desenhar áreas livres sobre a imagem.
 - As features são salvas como GeoJSON, com `properties` para `id`, `name`, `description`, `photoUrl` e `kind`.
-
-No visualizador:
-
-- Visitantes podem favoritar pontos.
-- Administradores não veem o fluxo de favoritos.
-- O backend guarda os favoritos como pares `mapId:poiId` por usuário.
 
 ### Documentação: Artigo 
   Acesso ao documento modelo do Projeto ALTAS.
