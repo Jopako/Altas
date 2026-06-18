@@ -24,6 +24,9 @@ Módulo Administrativo e Edição:
 - Interface intuitiva para que gestores possam cadastrar e editar Pontos de Interesse (POIs), como salas de aula, laboratórios e banheiros.
 - Ferramentas de limpeza visual para ocultar elementos técnicos irrelevantes da planta original e destacar rotas de circulação.
 - Gestão de pavimentos, permitindo a visualização alternada de diferentes andares do mesmo edifício.
+- Separação do fluxo administrativo em duas etapas: uma tela para criação/listagem de mapas e outra para edição de pontos de interesse e áreas mapeadas.
+- Criação de POIs por ponto específico ou por área livre desenhada sobre a planta, com persistência em GeoJSON.
+- Sistema de favoritos restrito a visitantes, com bloqueio explícito para administradores.
   
 Interface de Navegação Interativa (Frontend):
 
@@ -50,6 +53,7 @@ Manutenção e Autonomia:
 ![JWT](https://img.shields.io/badge/JWT-black?style=for-the-badge&logo=JSON%20web%20tokens)
 - **Controle de Sessão e Segurança**: JSON Web Tokens (JWT) e criptografia SHA-256 nativa do Node.js.
 - **Upload de Arquivos**: Multer.
+- **Favoritos**: armazenamento por usuário no backend, com validação de role e associação `mapId:poiId`.
 
 ### Ambiente e Banco de Dados:
 ![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
@@ -59,13 +63,16 @@ Manutenção e Autonomia:
 
 ## Como Executar o Projeto com Docker Compose
 
-O projeto está totalmente conteinerizado com **Docker**, o que elimina a necessidade de configurar dependências locais do Node.js na sua máquina de desenvolvimento.
+O projeto pode ser executado em dois modos:
+
+- `Desenvolvimento`: frontend com Vite e backend expostos separadamente.
+- `Produção`: frontend servido pelo Nginx e backend acessado via proxy reverso.
 
 ### Pré-requisitos
 - Docker instalado.
 - Docker Compose instalado.
 
-### Passo a Passo
+### Modo Desenvolvimento
 
 1. **Configuração de Variáveis de Ambiente**:
    Crie um arquivo `.env` na raiz do projeto baseado no `.env.example` (ou mantenha as variáveis locais ativas). Exemplo de estrutura:
@@ -86,7 +93,8 @@ O projeto está totalmente conteinerizado com **Docker**, o que elimina a necess
    ```
 
 3. **Acessar a Aplicação**:
-   - **Frontend (Visualização/Login)**: [http://localhost:5173](http://localhost:5173)
+   - **Frontend de produção via Nginx**: [http://localhost](http://localhost)
+   - **Frontend em desenvolvimento**: [http://localhost:5173](http://localhost:5173)
    - **Backend (API)**: [http://localhost:3000](http://localhost:3000)
 
 4. **Verificar os Logs**:
@@ -100,6 +108,47 @@ O projeto está totalmente conteinerizado com **Docker**, o que elimina a necess
    ```bash
    docker compose down
    ```
+
+### Modo Produção
+
+Use este modo quando quiser rodar o frontend compilado com Nginx e a API atrás do proxy reverso.
+
+```bash
+# Subir produção
+docker compose -f docker-compose.prod.yml up --build -d
+
+# Ver logs
+docker compose -f docker-compose.prod.yml logs -f
+
+# Derrubar
+docker compose -f docker-compose.prod.yml down
+
+# Ver status
+docker compose -f docker-compose.prod.yml ps
+```
+
+## Nginx E Produção
+
+O ambiente de produção usa o Nginx como servidor estático do frontend. O arquivo [`frontend/nginx.conf`](frontend/nginx.conf) faz duas coisas:
+
+- Sirve a SPA a partir de `/usr/share/nginx/html`.
+- Redireciona chamadas em `/api` para o serviço `backend` na porta `3000`.
+
+Isso permite publicar o frontend e a API no mesmo host sem depender de CORS entre origens diferentes.
+
+## Pontos E Favoritos
+
+O fluxo de POIs foi dividido em:
+
+- `MapEditor` fica responsável por criar mapas e listar os mapas do administrador.
+- `MapPoiEditor` recebe um mapa existente e cuida da criação/edição de pontos específicos e áreas desenhadas na planta.
+- As features são salvas como GeoJSON, com `properties` para `id`, `name`, `description`, `photoUrl` e `kind`.
+
+No visualizador:
+
+- Visitantes podem favoritar pontos.
+- Administradores não veem o fluxo de favoritos.
+- O backend guarda os favoritos como pares `mapId:poiId` por usuário.
 
 ### Documentação: Artigo 
   Acesso ao documento modelo do Projeto ALTAS.
