@@ -1,5 +1,5 @@
 <div align="center">
-  <h1>ALTAS</h1>
+<img src="https://readme-typing-svg.demolab.com?font=JetBrains+Mono&weight=600&size=48&pause=100&color=378ADD&center=true&vCenter=true&width=435&lines=Altas" alt="Typing SVG" />
   <p>Alunos: João Paulo Kowalski, Julia Luzzi Baldissera & Samuel Castilho Pereira </p>
 </div>
 
