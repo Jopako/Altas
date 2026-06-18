@@ -1,5 +1,11 @@
 import axios from 'axios';
-import { saveOrUpdateUser, readUsers, writeUsers, hashPassword, resolveRole } from './user.service.js';
+import {
+  saveOrUpdateUser,
+  findUserByEmail,
+  createUser,
+  hashPassword
+} from './user.service.js';
+
 import { signToken } from './token.service.js';
 
 const port        = process.env.PORT        || 3000;
@@ -20,7 +26,7 @@ export async function handleGoogleCallback(code) {
     headers: { Authorization: `Bearer ${tokens.access_token}` },
   });
 
-  const user  = saveOrUpdateUser(info);
+  const user = await saveOrUpdateUser(info);
   const token = signToken(user);
   return `${frontendUrl}/callback?token=${token}`;
 }
@@ -45,46 +51,86 @@ export async function handleMicrosoftCallback(code) {
     headers: { Authorization: `Bearer ${tokens.access_token}` },
   });
 
-  const user  = saveOrUpdateUser({ name: info.displayName, email: info.mail || info.userPrincipalName });
+  const user = await saveOrUpdateUser({ name: info.displayName, email: info.mail || info.userPrincipalName });
   const token = signToken(user);
   return `${frontendUrl}/callback?token=${token}`;
 }
 
 // ── Standard auth ───────────────────────────────────────────
 
-export function register({ name, email, password }) {
+export async function register({ name, email, password }) {
   const userEmail = email.toLowerCase().trim();
 
-  if (userEmail.endsWith('@estudantes.ifc.edu.br') || userEmail.endsWith('@ifc.edu.br'))
-    throw Object.assign(new Error('Contas institucionais devem usar login com Microsoft.'), { status: 400 });
+  if (
+    userEmail.endsWith('@estudantes.ifc.edu.br') ||
+    userEmail.endsWith('@ifc.edu.br')
+  ) {
+    throw Object.assign(
+      new Error('Contas institucionais devem usar login com Microsoft.'),
+      { status: 400 }
+    );
+  }
 
-  const users = readUsers();
-  if (users.find((u) => u.email.toLowerCase() === userEmail))
-    throw Object.assign(new Error('Este e-mail já está cadastrado.'), { status: 400 });
+  const existingUser = await findUserByEmail(userEmail);
+
+  if (existingUser) {
+    throw Object.assign(
+      new Error('Este e-mail já está cadastrado.'),
+      { status: 400 }
+    );
+  }
 
   const newUser = {
-    email:    userEmail,
-    name:     name.trim(),
-    role:     'visitante',
+    email: userEmail,
+    name: name.trim(),
+    role: 'visitante',
     password: hashPassword(password),
+    favorites: []
   };
 
-  writeUsers([...users, newUser]);
+  await createUser(newUser);
 
-  const payload = { email: newUser.email, name: newUser.name, role: newUser.role };
-  return { token: signToken(payload), user: payload };
+  const payload = {
+    email: newUser.email,
+    name: newUser.name,
+    role: newUser.role
+  };
+
+  return {
+    token: signToken(payload),
+    user: payload
+  };
 }
 
-export function login({ email, password }) {
-  const users = readUsers();
-  const user  = users.find((u) => u.email.toLowerCase() === email.toLowerCase().trim());
+export async function login({ email, password }) {
+  const user = await findUserByEmail(
+    email.toLowerCase().trim()
+  );
 
-  if (!user || !user.password)
-    throw Object.assign(new Error('E-mail ou senha incorretos, ou usuário cadastrado via OAuth.'), { status: 401 });
+  if (!user || !user.password) {
+    throw Object.assign(
+      new Error(
+        'E-mail ou senha incorretos, ou usuário cadastrado via OAuth.'
+      ),
+      { status: 401 }
+    );
+  }
 
-  if (user.password !== hashPassword(password))
-    throw Object.assign(new Error('E-mail ou senha incorretos.'), { status: 401 });
+  if (user.password !== hashPassword(password)) {
+    throw Object.assign(
+      new Error('E-mail ou senha incorretos.'),
+      { status: 401 }
+    );
+  }
 
-  const payload = { email: user.email, name: user.name, role: user.role };
-  return { token: signToken(payload), user: payload };
+  const payload = {
+    email: user.email,
+    name: user.name,
+    role: user.role
+  };
+
+  return {
+    token: signToken(payload),
+    user: payload
+  };
 }
