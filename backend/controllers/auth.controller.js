@@ -39,54 +39,97 @@ export const microsoftCallback = async (req, res) => {
   }
 };
 
-export const register = (req, res) => {
+export const register = async (req, res) => {
   const { name, email, password } = req.body;
-  if (!name || !email || !password)
-    return res.status(400).json({ error: 'Todos os campos (nome, e-mail e senha) são obrigatórios.' });
+
+  if (!name || !email || !password) {
+    return res.status(400).json({
+      error: 'Todos os campos (nome, e-mail e senha) são obrigatórios.'
+    });
+  }
 
   try {
-    res.json(authService.register({ name, email, password }));
+    const result = await authService.register({
+      name,
+      email,
+      password
+    });
+
+    res.json(result);
   } catch (err) {
-    res.status(err.status || 500).json({ error: err.message });
+    res.status(err.status || 500).json({
+      error: err.message
+    });
   }
 };
 
-export const login = (req, res) => {
+export const login = async (req, res) => {
   const { email, password } = req.body;
-  if (!email || !password)
-    return res.status(400).json({ error: 'E-mail e senha são obrigatórios.' });
+
+  if (!email || !password) {
+    return res.status(400).json({
+      error: 'E-mail e senha são obrigatórios.'
+    });
+  }
 
   try {
-    res.json(authService.login({ email, password }));
+    const result = await authService.login({
+      email,
+      password
+    });
+
+    res.json(result);
   } catch (err) {
-    res.status(err.status || 500).json({ error: err.message });
+    res.status(err.status || 500).json({
+      error: err.message
+    });
   }
 };
 
-export const getFavorites = (req, res) => {
-  if (req.user?.role === 'admin') return res.json({ favorites: [] });
+export const getFavorites = async (req, res) => {
+  if (req.user?.role === 'admin') {
+    return res.json({ favorites: [] });
+  }
 
   try {
-    const favorites = getUserFavorites(req.user.email);
+    const favorites = await getUserFavorites(
+      req.user.email
+    );
+
     res.json({ favorites });
   } catch (err) {
-    res.status(err.status || 500).json({ error: err.message });
+    res.status(err.status || 500).json({
+      error: err.message
+    });
   }
 };
 
-export const toggleFavorite = (req, res) => {
+export const toggleFavorite = async (req, res) => {
   if (req.user?.role === 'admin') {
-    return res.status(403).json({ error: 'Administradores não usam favoritos.' });
+    return res.status(403).json({
+      error: 'Administradores não usam favoritos.'
+    });
   }
 
   const { mapId, poiId } = req.body;
-  if (!mapId || !poiId)
-    return res.status(400).json({ error: 'mapId e poiId são obrigatórios.' });
+
+  if (!mapId || !poiId) {
+    return res.status(400).json({
+      error: 'mapId e poiId são obrigatórios.'
+    });
+  }
 
   try {
-    const favorites = toggleUserFavorite(req.user.email, mapId, poiId);
+    const favorites = await toggleUserFavorite(
+      req.user.email,
+      mapId,
+      poiId
+    );
+
     res.json({ favorites });
   } catch (err) {
-    res.status(err.status || 500).json({ error: err.message });
+    res.status(err.status || 500).json({
+      error: err.message
+    });
   }
 };
