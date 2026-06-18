@@ -137,5 +137,6 @@ O ambiente de produção usa o Nginx como servidor estático do frontend. O arqu
 
 Isso permite publicar o frontend e a API no mesmo host sem depender de CORS entre origens diferentes.
 
-### Documentação: Artigo 
-  Acesso ao documento modelo do Projeto ALTAS.
+### Documentação: 
+  - Acesso ao artigo do Projeto ALTAS.
+  - Acesso ao [Plano de Projeto](https://github.com/Jopako/Altas/wiki).
