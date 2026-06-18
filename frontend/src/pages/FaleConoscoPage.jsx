@@ -1,133 +1,20 @@
-import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import AltasMark from "../assets/imgs/altas-mark.svg";
+import { PageHeader, PageLayout, useTheme } from "../components/PageLayout";
 
-const FaleConosco = () => {
+const FaleConoscoPage = () => {
   const navigate = useNavigate();
-  const [theme, setTheme] = useState(() => {
-    if (typeof window === "undefined") return "light";
-    const stored = window.localStorage.getItem("theme");
-    if (stored === "dark" || stored === "light") return stored;
-    return window.matchMedia?.("(prefers-color-scheme: dark)").matches
-      ? "dark"
-      : "light";
-  });
-
-  useEffect(() => {
-    if (typeof document === "undefined") return;
-    document.documentElement.classList.toggle("dark", theme === "dark");
-    window.localStorage.setItem("theme", theme);
-  }, [theme]);
+  const [theme, setTheme] = useTheme();
 
   const handleSubmit = (event) => {
     event.preventDefault();
   };
 
   return (
-    <div
-      className={`min-h-[100svh] overflow-hidden relative flex flex-col pb-[110px] ${
-        theme === "dark"
-          ? "bg-[#0d203b] text-white"
-          : "bg-[#D7E7FF] text-[#1B2F55]"
-      }`}
+    <PageLayout
+      theme={theme}
+      background={<FaleConoscoBackground theme={theme} />}
     >
-      <FaleConoscoBackground theme={theme} />
-
-      <div
-        className={`absolute left-0 right-0 bottom-0 h-[78px] ${
-          theme === "dark" ? "bg-[#071427]" : "bg-[#1B2F55]"
-        }`}
-        aria-hidden="true"
-      />
-
-      <header className="relative z-10 grid grid-cols-[1fr_auto_1fr] items-center px-6 sm:px-10 lg:px-16 py-5">
-        <button
-          type="button"
-          onClick={() => navigate("/")}
-          className="flex items-center gap-2 select-none justify-self-start cursor-pointer"
-          aria-label="Ir para a página inicial"
-        >
-          <img src={AltasMark} alt="ALTAS" className="h-9 w-9" />
-          <span className="font-semibold tracking-[0.18em] text-[13px]">
-            ALTAS
-          </span>
-        </button>
-
-        <nav
-          className={`hidden md:flex items-center gap-7 text-[16px] justify-self-center ${
-            theme === "dark" ? "text-white/70" : "text-[#1B2F55]/75"
-          }`}
-          aria-label="Navegação principal"
-        >
-          <a
-            onClick={(e) => {
-              e.preventDefault();
-              navigate("/TeamPage");
-            }}
-            className={`transition-colors cursor-pointer ${
-              theme === "dark"
-                ? "text-white/70 hover:text-white"
-                : "text-[#1B2F55]/75 hover:text-[#1B2F55]"
-            }`}
-            href="#"
-          >
-            Equipe
-          </a>
-          <a
-            onClick={(e) => {
-              e.preventDefault();
-              navigate("/FaleConosco");
-            }}
-            className={`transition-colors cursor-pointer font-semibold ${
-              theme === "dark"
-                ? "text-white hover:text-white"
-                : "text-[#1B2F55] hover:text-[#1B2F55]"
-            }`}
-            href="#"
-            aria-current="page"
-          >
-            Fale conosco
-          </a>
-          <a
-            onClick={(e) => {
-              e.preventDefault();
-              navigate("/Instituicoes");
-            }}
-            className={`transition-colors cursor-pointer ${
-              theme === "dark"
-                ? "text-white/70 hover:text-white"
-                : "text-[#1B2F55]/75 hover:text-[#1B2F55]"
-            }`}
-            href="#"
-          >
-            Instituições
-          </a>
-        </nav>
-
-        <div className="flex items-center gap-3 justify-self-end">
-          <p
-            className={`hidden sm:block text-[10px] font-semibold tracking-[0.28em] uppercase ${
-              theme === "dark" ? "text-white/50" : "text-[#1B2F55]/50"
-            }`}
-          >
-            Mapeamento institucional
-          </p>
-          <button
-            className="h-9 w-9 rounded-full grid place-items-center transition-colors cursor-pointer bg-[#1B2F55] text-white hover:bg-[#152133]"
-            type="button"
-            aria-label={
-              theme === "dark"
-                ? "Mudar para modo claro"
-                : "Mudar para modo escuro"
-            }
-            onClick={() =>
-              setTheme((prev) => (prev === "dark" ? "light" : "dark"))
-            }
-          >
-            {theme === "dark" ? <SunIcon /> : <MoonIcon />}
-          </button>
-        </div>
-      </header>
+      <PageHeader theme={theme} setTheme={setTheme} />
 
       <main className="relative z-10 flex-1 min-h-0 px-6 sm:px-10 lg:px-16 flex flex-col">
         <section className="pt-8 sm:pt-10 md:pt-12 text-center">
@@ -157,7 +44,7 @@ const FaleConosco = () => {
         <section className="mt-10">
           <div className="mx-auto max-w-[980px] grid gap-7 lg:grid-cols-[1.05fr_0.95fr] items-start">
             <div
-              className={`rounded-[32px] border ${
+              className={`rounded-[32px] h-123 border ${
                 theme === "dark"
                   ? "border-white/10 bg-white/5"
                   : "border-[#2F5EA8]/15 bg-white/90"
@@ -282,21 +169,11 @@ const FaleConosco = () => {
           </div>
         </section>
       </main>
-
-      <footer className="absolute left-0 right-0 bottom-0 h-[78px] grid place-items-center z-10">
-        <p
-          className={`text-[10px] font-semibold tracking-[0.28em] uppercase ${
-            theme === "dark" ? "text-white/55" : "text-white/70"
-          }`}
-        >
-          Equipe Altas - 2026
-        </p>
-      </footer>
-    </div>
+    </PageLayout>
   );
 };
 
-export default FaleConosco;
+export default FaleConoscoPage;
 
 function FaleConoscoBackground({ theme }) {
   return (
@@ -350,48 +227,6 @@ function FaleConoscoBackground({ theme }) {
           fillOpacity={theme === "dark" ? "0.18" : "0.22"}
         />
       </g>
-    </svg>
-  );
-}
-
-function MoonIcon() {
-  return (
-    <svg
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill="none"
-      aria-hidden="true"
-    >
-      <path
-        d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"
-        stroke="currentColor"
-        strokeOpacity="1"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function SunIcon() {
-  return (
-    <svg
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill="none"
-      aria-hidden="true"
-    >
-      <circle cx="12" cy="12" r="4.2" fill="currentColor" opacity="0.92" />
-      <path
-        d="M12 2.8V5.1M12 18.9V21.2M2.8 12H5.1M18.9 12H21.2M4.6 4.6L6.2 6.2M17.8 17.8L19.4 19.4M19.4 4.6L17.8 6.2M6.2 17.8L4.6 19.4"
-        stroke="currentColor"
-        strokeOpacity="0.92"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-      />
     </svg>
   );
 }

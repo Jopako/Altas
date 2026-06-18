@@ -1,29 +1,21 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import AltasMark from "../assets/imgs/altas-mark.svg";
+import { PageHeader, PageLayout, useTheme } from "../components/PageLayout";
+import Samu from "../assets/imgs/samu.png";
+import Joao from "../assets/imgs/joao.jpeg";
+import Julia from "../assets/imgs/julia.jpeg"; 
 
 const TeamPage = () => {
   const navigate = useNavigate();
-  const [theme, setTheme] = useState(() => {
-    if (typeof window === "undefined") return "light";
-    const stored = window.localStorage.getItem("theme");
-    if (stored === "dark" || stored === "light") return stored;
-    return window.matchMedia?.("(prefers-color-scheme: dark)").matches
-      ? "dark"
-      : "light";
-  });
+  const [theme, setTheme] = useTheme();
 
-  useEffect(() => {
-    if (typeof document === "undefined") return;
-    document.documentElement.classList.toggle("dark", theme === "dark");
-    window.localStorage.setItem("theme", theme);
-  }, [theme]);
   const members = useMemo(
     () => [
       {
         name: "João Paulo Kowalski",
         bio: "Bem-vindo(a) ao nosso time! Somos um grupo de estudantes da Ciência da Computação. Venha conhecer o resto dos integrantes desse projeto.",
         initials: "JK",
+        image: Joao,
         links: {
           linkedin: "#",
           x: "#",
@@ -34,6 +26,7 @@ const TeamPage = () => {
         name: "Julia Luzzi Baldissera",
         bio: "Bem-vindo(a) ao nosso time! Somos um grupo de estudantes da Ciência da Computação. Venha conhecer o resto dos integrantes desse projeto.",
         initials: "JB",
+        image: Julia,
         links: {
           linkedin: "#",
           x: "#",
@@ -44,6 +37,7 @@ const TeamPage = () => {
         name: "Samuel Castilho Pereira",
         bio: "Bem-vindo(a) ao nosso time! Somos um grupo de estudantes da Ciência da Computação. Venha conhecer o resto dos integrantes desse projeto.",
         initials: "SP",
+        image: Samu,
         links: {
           linkedin: "#",
           x: "#",
@@ -55,111 +49,8 @@ const TeamPage = () => {
   );
 
   return (
-    <div
-      className={`h-[100svh] overflow-hidden relative flex flex-col ${
-        theme === "dark"
-          ? "bg-[#0d203b] text-white"
-          : "bg-[#D7E7FF] text-[#1B2F55]"
-      }`}
-    >
-      <TeamBackground theme={theme} />
-      <div
-        className={`absolute left-0 right-0 bottom-0 h-[78px] ${
-          theme === "dark" ? "bg-[#071427]" : "bg-[#3F64A6]"
-        }`}
-        aria-hidden="true"
-      />
-
-      <header className="relative z-10 grid grid-cols-[1fr_auto_1fr] items-center px-6 sm:px-10 lg:px-16 py-5">
-        <button
-          type="button"
-          onClick={() => navigate("/")}
-          className="flex items-center gap-2 select-none justify-self-start cursor-pointer"
-          aria-label="Ir para a página inicial"
-        >
-          <img src={AltasMark} alt="ALTAS" className="h-9 w-9" />
-          <span className="font-semibold tracking-[0.18em] text-[13px]">
-            ALTAS
-          </span>
-        </button>
-
-        <nav
-          className={`hidden md:flex items-center gap-7 text-[16px] justify-self-center ${
-            theme === "dark" ? "text-white/70" : "text-[#1B2F55]/75"
-          }`}
-          aria-label="Navegação principal"
-        >
-          <a
-            onClick={(e) => {
-              e.preventDefault();
-              navigate("/TeamPage");
-            }}
-            className={`transition-colors cursor-pointer font-semibold ${
-              theme === "dark"
-                ? "text-white hover:text-white"
-                : "text-[#1B2F55] hover:text-[#1B2F55]"
-            }`}
-            href="#"
-            aria-current="page"
-          >
-            Equipe
-          </a>
-          <a
-            onClick={(e) => {
-              e.preventDefault();
-              navigate("/FaleConosco");
-            }}
-            className={`transition-colors cursor-pointer ${
-              theme === "dark"
-                ? "text-white hover:text-white"
-                : "text-[#1B2F55] hover:text-[#1B2F55]"
-            }`}
-            href="#"
-          >
-            Fale conosco
-          </a>
-          <a
-            onClick={(e) => {
-              e.preventDefault();
-              navigate("/Instituicoes");
-            }}
-            className={`transition-colors ${
-              theme === "dark" ? "hover:text-white" : "hover:text-[#1B2F55]"
-            }`}
-            href="#"
-          >
-            Instituições
-          </a>
-        </nav>
-
-        <div className="flex items-center gap-3 justify-self-end">
-          <p
-            className={`hidden sm:block text-[10px] font-semibold tracking-[0.28em] uppercase ${
-              theme === "dark" ? "text-white/50" : "text-[#1B2F55]/50"
-            }`}
-          >
-            Mapeamento institucional
-          </p>
-          <button
-            className={`h-9 w-9 rounded-full grid place-items-center transition-colors cursor-pointer ${
-              theme === "dark"
-                ? "bg-[#4A7FD4] hover:bg-[#3f6fba] ring-1 ring-white/15 text-white"
-                : "bg-[#4A7FD4] hover:bg-[#3f6fba] ring-1 ring-[#2F5EA8]/20 text-white"
-            }`}
-            type="button"
-            aria-label={
-              theme === "dark"
-                ? "Mudar para modo claro"
-                : "Mudar para modo escuro"
-            }
-            onClick={() =>
-              setTheme((prev) => (prev === "dark" ? "light" : "dark"))
-            }
-          >
-            {theme === "dark" ? <SunIcon /> : <MoonIcon />}
-          </button>
-        </div>
-      </header>
+    <PageLayout theme={theme} showFooter={false}>
+      <PageHeader theme={theme} setTheme={setTheme} />
 
       <main className="relative z-10 flex-1 min-h-0 px-6 sm:px-10 lg:px-16 flex flex-col">
         <section className="pt-7 sm:pt-9 md:pt-10 text-center">
@@ -173,7 +64,7 @@ const TeamPage = () => {
 
           <h1 className="mt-6 font-extrabold leading-[1.05] tracking-[-0.02em]">
             <span
-              className={`inline-block px-6 sm:px-8 py-2 text-[clamp(1.7rem,4.1vw,46px)] shadow-[0_10px_30px_rgba(15,32,68,0.12)] ${
+              className={`inline-block px-6 sm:px-8 py-2 text-[clamp(1.7rem,4.1vw,46px)]  ${
                 theme === "dark" ? "text-[#F59E0B]" : "text-[#1B2F55]"
               }`}
             >
@@ -181,7 +72,7 @@ const TeamPage = () => {
             </span>
             <br />
             <span
-              className={`inline-block mt-3 px-6 sm:px-8 py-2 text-[clamp(1.75rem,4.3vw,50px)] shadow-[0_10px_30px_rgba(15,32,68,0.12)] ${
+              className={`inline-block mt-3 px-6 sm:px-8 py-2 text-[clamp(1.75rem,4.3vw,50px)]  ${
                 theme === "dark" ? "text-[#F59E0B]" : "text-[#1B2F55]"
               }`}
             >
@@ -207,7 +98,7 @@ const TeamPage = () => {
           </div>
         </section>
       </main>
-    </div>
+    </PageLayout>
   );
 };
 
@@ -258,6 +149,8 @@ function TeamBackground({ theme }) {
         <circle cx="250" cy="260" r="2.2" fillOpacity="0.32" />
         <circle cx="1180" cy="300" r="2.4" fillOpacity="0.28" />
         <circle cx="980" cy="150" r="2.0" fillOpacity="0.28" />
+        <circle cx="90" cy="360" r="2.0" fill="#D97706" fillOpacity="0.28" />
+        <circle cx="1415" cy="360" r="2.4" fill="#D97706" fillOpacity="0.26" />
       </g>
     </svg>
   );
@@ -275,7 +168,12 @@ function TeamCard({ member, theme }) {
       className={`rounded-2xl ${cardBg} backdrop-blur-sm px-7 pt-7 pb-6 shadow-[0_18px_50px_rgba(15,32,68,0.10)]`}
     >
       <div className="grid place-items-center">
-        <Avatar theme={theme} initials={member.initials} alt={member.name} />
+        <Avatar
+          theme={theme}
+          initials={member.initials}
+          alt={member.name}
+          image={member.image}
+        />
       </div>
 
       <h2
@@ -316,7 +214,7 @@ function TeamCard({ member, theme }) {
   );
 }
 
-function Avatar({ initials, alt, theme }) {
+function Avatar({ initials, alt, theme, image }) {
   return (
     <div
       className={`h-[120px] w-[120px] rounded-2xl grid place-items-center overflow-hidden ${
@@ -327,13 +225,7 @@ function Avatar({ initials, alt, theme }) {
       aria-label={alt}
       role="img"
     >
-      <span
-        className={`font-extrabold tracking-[-0.03em] text-[32px] ${
-          theme === "dark" ? "text-white" : "text-[#0B1B3B]"
-        }`}
-      >
-        {initials}
-      </span>
+      <img src={image} alt="" className="h-full w-full object-cover" />
     </div>
   );
 }
@@ -356,48 +248,6 @@ function SocialIconButton({ href, label, icon, theme }) {
     >
       {icon}
     </a>
-  );
-}
-
-function MoonIcon() {
-  return (
-    <svg
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill="none"
-      aria-hidden="true"
-    >
-      <path
-        d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"
-        stroke="currentColor"
-        strokeOpacity="1"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function SunIcon() {
-  return (
-    <svg
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill="none"
-      aria-hidden="true"
-    >
-      <circle cx="12" cy="12" r="4.2" fill="currentColor" opacity="0.92" />
-      <path
-        d="M12 2.8V5.1M12 18.9V21.2M2.8 12H5.1M18.9 12H21.2M4.6 4.6L6.2 6.2M17.8 17.8L19.4 19.4M19.4 4.6L17.8 6.2M6.2 17.8L4.6 19.4"
-        stroke="currentColor"
-        strokeOpacity="0.92"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-      />
-    </svg>
   );
 }
 
