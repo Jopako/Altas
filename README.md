@@ -137,13 +137,5 @@ O ambiente de produção usa o Nginx como servidor estático do frontend. O arqu
 
 Isso permite publicar o frontend e a API no mesmo host sem depender de CORS entre origens diferentes.
 
-## Pontos E Favoritos
-
-O fluxo de POIs foi dividido em:
-
-- `MapEditor` fica responsável por criar mapas e listar os mapas do administrador.
-- `MapPoiEditor` recebe um mapa existente, carrega a imagem da planta e permite criar pontos específicos ou desenhar áreas livres sobre a imagem.
-- As features são salvas como GeoJSON, com `properties` para `id`, `name`, `description`, `photoUrl` e `kind`.
-
 ### Documentação: Artigo 
   Acesso ao documento modelo do Projeto ALTAS.
