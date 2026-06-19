@@ -3,10 +3,12 @@
   <p>Alunos: João Paulo Kowalski, Julia Luzzi Baldissera & Samuel Castilho Pereira </p>
 </div>
 
+<img width="1272" height="706"  alt="Captura de tela de 2026-06-19 09-37-11" src="https://github.com/user-attachments/assets/9cf28faf-7e42-4423-9031-b3f03162f6ba"/>
+
+
 # Introdução
 A complexidade arquitetônica de instituições de ensino contemporâneas, frequentemente compostas por múltiplos blocos, níveis e setores administrativos, impõe desafios significativos à mobilidade e à localização espacial de seus usuários. Para alunos ingressantes, servidores e visitantes, a dificuldade em identificar serviços institucionais e estruturas de apoio pode gerar desorientação e comprometer a eficiência das atividades cotidianas. Nesse cenário, a transformação de plantas arquitetônicas estáticas em interfaces digitais dinâmicas surge como uma solução estratégica para democratizar o acesso à informação espacial.
 
-<img width="1272" height="706" alt="Captura de tela de 2026-06-19 09-37-11" src="https://github.com/user-attachments/assets/9cf28faf-7e42-4423-9031-b3f03162f6ba" />
 
 
 # Funcionalidades e Objetivos
