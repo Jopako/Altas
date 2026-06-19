@@ -1,16 +1,20 @@
 import { useId, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import axios from "axios";
 import AltasMark from "../assets/imgs/altas-mark.svg";
 import LoginPlaceholder from "../assets/imgs/login-placeholder.svg";
 import { PageHeader, PageLayout, useTheme } from "../components/PageLayout";
 import { AuthBackground } from "../components/AuthBackground";
 
 const LoginPage = () => {
+  const navigate = useNavigate();
   const [theme, setTheme] = useTheme();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const navLinkClass = useMemo(
     () =>
@@ -31,6 +35,41 @@ const LoginPage = () => {
   const emailId = useId();
   const passwordId = useId();
   const rememberId = useId();
+
+  async function handleStandardLogin(e) {
+    e.preventDefault();
+
+    if (!email || !password) {
+      setError("E-mail e senha são obrigatórios.");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError("");
+
+      const response = await axios.post("http://localhost:3000/api/auth/login", {
+        email,
+        password,
+      });
+
+      if (response.data?.token) {
+        localStorage.setItem("jwt_token", response.data.token);
+        navigate("/map-viewer");
+        return;
+      }
+
+      setError("Não foi possível entrar com essas credenciais.");
+    } catch (err) {
+      setError(err.response?.data?.error || "Erro de autenticação. Verifique suas credenciais.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function handleOAuthLogin(provider) {
+    window.location.href = `http://localhost:3000/auth/${provider}`;
+  }
 
   return (
     <PageLayout
@@ -82,7 +121,7 @@ const LoginPage = () => {
                   <button
                     type="button"
                     className="flex-1 h-[44px] rounded-[10px] bg-[#F59E0B] text-[#0B1B3B] hover:bg-[#d97706] font-semibold text-[13px] shadow-[0_10px_24px_rgba(245,158,11,0.25)] flex items-center justify-center gap-3 transition-colors cursor-pointer"
-                    onClick={() => {}}
+                    onClick={() => handleOAuthLogin("google")}
                   >
                     <GoogleIcon />
                     Google
@@ -90,7 +129,7 @@ const LoginPage = () => {
                   <button
                     type="button"
                     className="flex-1 h-[44px] rounded-[10px] bg-[#F59E0B] text-[#0B1B3B] hover:bg-[#d97706] font-semibold text-[13px] shadow-[0_10px_24px_rgba(245,158,11,0.25)] flex items-center justify-center gap-3 transition-colors cursor-pointer"
-                    onClick={() => {}}
+                    onClick={() => handleOAuthLogin("microsoft")}
                   >
                     <MicrosoftIcon />
                     Microsoft
@@ -119,10 +158,20 @@ const LoginPage = () => {
 
                 <form
                   className="mt-6 space-y-4"
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                  }}
+                  onSubmit={handleStandardLogin}
                 >
+                  {error ? (
+                    <div
+                      className={`rounded-[8px] border px-3 py-2 text-[12px] text-left ${
+                        theme === "dark"
+                          ? "border-red-500/25 bg-red-500/10 text-red-200"
+                          : "border-red-400/30 bg-red-50 text-red-700"
+                      }`}
+                    >
+                      {error}
+                    </div>
+                  ) : null}
+
                   <Field
                     id={emailId}
                     theme={theme}
@@ -183,9 +232,10 @@ const LoginPage = () => {
 
                   <button
                     type="submit"
+                    disabled={loading}
                     className="mt-3 w-full h-[46px] rounded-[10px] font-semibold text-[13px] shadow-[0_12px_26px_rgba(47,94,168,0.25)] transition-colors bg-[#1B2F55] text-white hover:bg-[#152133] cursor-pointer"
                   >
-                    Entrar
+                    {loading ? "Entrando..." : "Entrar"}
                   </button>
                 </form>
 

@@ -1,16 +1,16 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import Callback from './pages/Callback';
+import Home from './pages/HomePage.jsx';
+import Login from './pages/LoginPage.jsx';
+import Register from './pages/RegisterPage.jsx';
+import Callback from './pages/Callback.jsx';
 import MapViewer from './pages/MapViewer.jsx';
 import MapEditor from './pages/MapEditor.jsx';
 import MapPoiEditor from './pages/MapPoiEditor.jsx';
 import Favorites from './pages/Favorites.jsx';
-import Home from './pages/Home.jsx';
-import ConhecaAltas from './pages/ConhecaAltas.jsx';
+import ConhecaAltas from './pages/ConhecaAltasPage.jsx';
 import TeamPage from './pages/TeamPage.jsx';
-import FaleConosco from './pages/FaleConosco.jsx';
-import Instituicoes from './pages/Instituicoes.jsx';
+import FaleConosco from './pages/FaleConoscoPage.jsx';
+import Instituicoes from './pages/InstituicoesPage.jsx';
 
 function App() {
   return (

@@ -1,19 +1,55 @@
 import { useId, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import axios from "axios";
 import AltasMark from "../assets/imgs/altas-mark.svg";
 import { AuthBackground } from "../components/AuthBackground";
 import { PageHeader, PageLayout, useTheme } from "../components/PageLayout";
 
 function RegisterPage() {
+  const navigate = useNavigate();
   const [theme, setTheme] = useTheme();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const nameId = useId();
   const emailId = useId();
   const passwordId = useId();
+
+  async function handleRegister(e) {
+    e.preventDefault();
+
+    if (!name || !email || !password) {
+      setError("Todos os campos são obrigatórios.");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError("");
+
+      const response = await axios.post("http://localhost:3000/api/auth/register", {
+        name,
+        email,
+        password,
+      });
+
+      if (response.data?.token) {
+        localStorage.setItem("jwt_token", response.data.token);
+        navigate("/map-viewer");
+        return;
+      }
+
+      setError("Não foi possível concluir o cadastro.");
+    } catch (err) {
+      setError(err.response?.data?.error || "Erro ao realizar cadastro.");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   return (
     <PageLayout
@@ -72,10 +108,20 @@ function RegisterPage() {
 
                   <form
                     className="mt-7 space-y-4"
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                    }}
+                    onSubmit={handleRegister}
                   >
+                    {error ? (
+                      <div
+                        className={`rounded-[8px] border px-3 py-2 text-[12px] text-left ${
+                          theme === "dark"
+                            ? "border-red-500/25 bg-red-500/10 text-red-200"
+                            : "border-red-400/30 bg-red-50 text-red-700"
+                        }`}
+                      >
+                        {error}
+                      </div>
+                    ) : null}
+
                     <Field
                       id={nameId}
                       theme={theme}
@@ -130,9 +176,10 @@ function RegisterPage() {
 
                     <button
                       type="submit"
+                      disabled={loading}
                       className="mt-4 w-full h-[46px] rounded-[10px] font-semibold text-[13px] shadow-[0_12px_26px_rgba(47,94,168,0.25)] transition-colors bg-[#1B2F55] text-white hover:bg-[#152133] cursor-pointer"
                     >
-                      Cadastrar-se
+                      {loading ? "Cadastrando..." : "Cadastrar-se"}
                     </button>
 
                     <p
