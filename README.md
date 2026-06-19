@@ -137,6 +137,33 @@ O ambiente de produção usa o Nginx como servidor estático do frontend. O arqu
 
 Isso permite publicar o frontend e a API no mesmo host sem depender de CORS entre origens diferentes.
 
-### Documentação: 
+## Documentação da API
+### Registrar usuário
+  
+POST /auth/register
+
+### Login
+POST /auth/login
+
+Autentica o usuário e retorna um token JWT.
+
+### Listar Mapas
+GET /maps
+
+### Buscar mapa por ID
+GET /maps/:id
+
+### Atualizar elementos do mapa, exemplo: Pontos de interesse
+PUT /maps/:id/features
+
+Exemplo de requisição:
+```
+{ "type": "FeatureCollection", "features": [] }
+```
+
+### Listar favoritos
+GET /auth/favorites
+
+## Documentação: 
   - Acesso ao artigo do Projeto ALTAS.
   - Acesso ao [Plano de Projeto](https://github.com/Jopako/Altas/wiki).
