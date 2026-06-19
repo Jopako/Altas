@@ -165,5 +165,4 @@ Exemplo de requisição:
 GET /auth/favorites
 
 ## Documentação: 
-  - Acesso ao artigo do Projeto ALTAS.
   - Acesso ao [Plano de Projeto](https://github.com/Jopako/Altas/wiki).
