@@ -171,3 +171,4 @@ GET /auth/favorites
 
 ## Documentação: 
   - Acesso ao [Plano de Projeto](https://github.com/Jopako/Altas/wiki).
+  - <a href="Modelo Projeto Interdisciplinar.pdf" class="image fit"> PDF </a>
