@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { PageLayout, PageHeader, PageFooter, useTheme } from '../components/PageLayout';
+import { AuthBackground } from '../components/AuthBackground';
 
 // Self-contained pure JS JWT decoder
 function decodeToken(token) {
@@ -22,9 +24,12 @@ function decodeToken(token) {
 
 export default function Favorites() {
   const navigate = useNavigate();
+  const [theme, setTheme] = useTheme();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [favoritePOIs, setFavoritePOIs] = useState([]);
+  const [mapList, setMapList] = useState([]);
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
     const token = localStorage.getItem('jwt_token');
@@ -37,6 +42,7 @@ export default function Favorites() {
       navigate('/map-viewer');
       return;
     }
+    setUser(decoded);
 
     async function loadData() {
       try {
@@ -47,15 +53,16 @@ export default function Favorites() {
         });
         const favList = favRes.data.favorites || [];
 
+        // Fetch all maps to resolve details
+        const mapsRes = await axios.get('http://localhost:3000/api/maps');
+        const maps = mapsRes.data || [];
+        setMapList(maps);
+
         if (favList.length === 0) {
           setFavoritePOIs([]);
           setLoading(false);
           return;
         }
-
-        // Fetch all maps to resolve details
-        const mapsRes = await axios.get('http://localhost:3000/api/maps');
-        const maps = mapsRes.data || [];
 
         // Match favorites to actual POI data
         const resolvedList = [];
@@ -72,6 +79,7 @@ export default function Favorites() {
                 name: poi.properties.name || 'Sem nome',
                 description: poi.properties.description || 'Sem descrição',
                 photoUrl: poi.properties.photoUrl || '',
+                institutionName: map.creatorName || 'Instituição',
               });
             }
           }
@@ -107,123 +115,166 @@ export default function Favorites() {
 
   if (loading) {
     return (
-      <div style={{ background: '#0a0a1a', minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-        <h1 style={{ color: '#e0e0f0', fontFamily: 'sans-serif' }}>Carregando favoritos...</h1>
-      </div>
+      <PageLayout theme={theme} background={<AuthBackground theme={theme} />}>
+        <PageHeader theme={theme} setTheme={setTheme} isLoggedIn />
+        <main className="relative z-10 flex-1 flex items-center justify-center">
+          <p className={`text-lg font-semibold ${theme === 'dark' ? 'text-white/70' : 'text-[#1B2F55]/70'}`}>
+            Carregando favoritos...
+          </p>
+        </main>
+      </PageLayout>
     );
   }
 
   return (
-    <div style={{ background: '#0a0a1a', minHeight: '100vh', padding: '40px', fontFamily: "'Inter', sans-serif", color: '#e0e0f0' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', paddingBottom: '20px', marginBottom: '30px' }}>
-        <div>
-          <h1 style={{ margin: 0, fontSize: '32px', fontFamily: "'JetBrains Mono', monospace", background: 'linear-gradient(135deg, #4466ff 0%, #aa55ff 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', fontWeight: '700' }}>⭐ FAVORITOS</h1>
-          <p style={{ margin: '4px 0 0 0', color: '#888899', fontSize: '14px', textTransform: 'uppercase', letterSpacing: '1px' }}>Seus Pontos de Interesse Salvos</p>
-        </div>
-        <button 
-          onClick={() => navigate('/map-viewer')}
-          style={{ padding: '10px 20px', background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', color: '#e0e0f0', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}
-        >
-          Voltar para Galeria
-        </button>
-      </div>
+    <PageLayout theme={theme} background={<AuthBackground theme={theme} />}>
+      <PageHeader theme={theme} setTheme={setTheme} isLoggedIn />
 
-      {error && (
-        <div style={{ color: '#ff5555', padding: '16px', background: 'rgba(255,0,0,0.1)', borderRadius: '8px', marginBottom: '20px' }}>
-          {error}
-        </div>
-      )}
+      <main className="relative z-10 flex-1 flex flex-col lg:flex-row gap-8 px-6 sm:px-10 lg:px-16 pb-8">
+        {/* Lado esquerdo - Favoritos */}
+        <div className="w-full lg:w-[420px] flex-shrink-0">
+          {/* Info do usuário */}
+          <div className="mb-5">
+            <p className={`text-sm font-bold ${theme === 'dark' ? 'text-white' : 'text-[#1B2F55]'}`}>
+              {user?.name || user?.email || 'Visitante'}
+            </p>
+            <p className={`text-xs ${theme === 'dark' ? 'text-white/60' : 'text-[#1B2F55]/60'}`}>
+              Perfil: Visitante
+            </p>
+          </div>
 
-      {favoritePOIs.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '60px 20px', background: 'rgba(255, 255, 255, 0.02)', borderRadius: '12px', border: '1px dashed rgba(255,255,255,0.08)' }}>
-          <span style={{ fontSize: '48px', display: 'block', marginBottom: '16px' }}>⭐</span>
-          <h3 style={{ margin: '0 0 8px 0', color: '#888899' }}>Nenhum favorito encontrado</h3>
-          <p style={{ margin: 0, color: '#666677', fontSize: '14px' }}>Você pode favoritar pontos clicando neles no mapa de visualização.</p>
-        </div>
-      ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '30px' }}>
-          {favoritePOIs.map((item) => (
-            <div 
-              key={`${item.mapId}-${item.poiId}`} 
-              style={{
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                borderRadius: '12px',
-                padding: '16px',
-                background: 'rgba(17, 17, 34, 0.6)',
-                backdropFilter: 'blur(8px)',
-                boxShadow: '0 4px 15px rgba(0,0,0,0.2)',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-                position: 'relative'
-              }}
-            >
-              <button
-                onClick={() => handleRemoveFavorite(item.mapId, item.poiId)}
-                style={{
-                  position: 'absolute',
-                  top: '12px',
-                  right: '12px',
-                  background: 'rgba(255, 153, 0, 0.15)',
-                  border: 'none',
-                  borderRadius: '50%',
-                  width: '32px',
-                  height: '32px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                  color: '#ffcc00',
-                  fontSize: '16px',
-                  transition: 'all 0.2s',
-                  zIndex: 10
-                }}
-                title="Remover dos favoritos"
-              >
-                ★
-              </button>
+          <h2 className={`text-xl font-extrabold mb-1 ${theme === 'dark' ? 'text-white' : 'text-[#1B2F55]'}`}>
+            Pontos de Interesse
+          </h2>
+          <h2 className={`text-xl font-extrabold mb-5 ${theme === 'dark' ? 'text-white' : 'text-[#1B2F55]'}`}>
+            Favoritos:
+          </h2>
 
-              <div>
-                {item.photoUrl ? (
-                  <img 
-                    src={`http://localhost:3000${item.photoUrl}`} 
-                    alt={item.name} 
-                    style={{ width: '100%', height: '150px', objectFit: 'cover', borderRadius: '8px', marginBottom: '14px', border: '1px solid rgba(255, 255, 255, 0.05)' }} 
-                  />
-                ) : (
-                  <div style={{ width: '100%', height: '150px', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', marginBottom: '14px', display: 'flex', justifyContent: 'center', alignItems: 'center', border: '1px dashed rgba(255,255,255,0.08)', color: '#444455' }}>
-                    Sem foto
-                  </div>
-                )}
-                <h4 style={{ margin: '0 0 6px 0', color: '#e0e0f0', fontSize: '18px', fontWeight: '600' }}>{item.name}</h4>
-                <p style={{ margin: '0 0 12px 0', color: '#888899', fontSize: '13px', lineHeight: '1.4' }}>{item.description}</p>
-              </div>
-
-              <div style={{ marginTop: 'auto', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '12px' }}>
-                <span style={{ display: 'block', color: '#5577ff', fontSize: '12px', marginBottom: '10px', fontWeight: '600' }}>
-                  🗺️ {item.mapName}
-                </span>
-                <button
-                  onClick={() => navigate(`/map-viewer/${item.mapId}`)}
-                  style={{
-                    width: '100%',
-                    padding: '8px',
-                    background: 'linear-gradient(135deg, #4466ff 0%, #aa55ff 100%)',
-                    color: '#fff',
-                    border: 'none',
-                    borderRadius: '6px',
-                    cursor: 'pointer',
-                    fontWeight: '700',
-                    fontSize: '13px'
-                  }}
-                >
-                  Ver no Mapa
-                </button>
-              </div>
+          {error && (
+            <div className="mb-4 p-3 rounded-lg bg-red-500/10 text-red-400 text-sm">
+              {error}
             </div>
-          ))}
+          )}
+
+          {favoritePOIs.length === 0 ? (
+            <div className={`text-center py-12 rounded-xl border border-dashed ${
+              theme === 'dark' ? 'border-white/10 bg-white/3' : 'border-[#1B2F55]/10 bg-[#1B2F55]/3'
+            }`}>
+              <span className="text-4xl block mb-3">⭐</span>
+              <p className={`text-sm font-semibold mb-1 ${theme === 'dark' ? 'text-white/50' : 'text-[#1B2F55]/50'}`}>
+                Nenhum favorito encontrado
+              </p>
+              <p className={`text-xs ${theme === 'dark' ? 'text-white/35' : 'text-[#1B2F55]/35'}`}>
+                Você pode favoritar pontos clicando neles no mapa.
+              </p>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-4">
+              {favoritePOIs.map((item) => (
+                <div
+                  key={`${item.mapId}-${item.poiId}`}
+                  className={`flex gap-4 p-3 rounded-xl transition-all duration-200 hover:shadow-md ${
+                    theme === 'dark'
+                      ? 'bg-[#0f2346]/80 border border-white/10 hover:border-blue-400/30'
+                      : 'bg-white/80 border border-[#1B2F55]/10 hover:border-[#4A7FD4]/30'
+                  }`}
+                >
+                  {/* Thumbnail */}
+                  <div className={`w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden ${
+                    theme === 'dark' ? 'bg-[#1a3a6e]' : 'bg-[#6b8fc7]'
+                  }`}>
+                    {item.photoUrl ? (
+                      <img
+                        src={`http://localhost:3000${item.photoUrl}`}
+                        alt={item.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-white/50 text-[10px] text-center px-1">
+                        Imagem do lugar
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Info */}
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-[10px] mb-0.5 ${theme === 'dark' ? 'text-white/40' : 'text-[#1B2F55]/40'}`}>
+                      <span className="font-bold">Instituição:</span> {item.institutionName}
+                    </p>
+                    <p className={`text-[10px] mb-0.5 ${theme === 'dark' ? 'text-white/40' : 'text-[#1B2F55]/40'}`}>
+                      <span className="font-bold">Nome do Local:</span> {item.name}
+                    </p>
+                    <p className={`text-[10px] leading-relaxed ${theme === 'dark' ? 'text-white/40' : 'text-[#1B2F55]/40'}`}>
+                      <span className="font-bold">Descrição:</span> {item.description}
+                    </p>
+                  </div>
+
+                  {/* Botão favorito */}
+                  <button
+                    onClick={() => handleRemoveFavorite(item.mapId, item.poiId)}
+                    className="flex-shrink-0 self-center text-red-400 hover:text-red-300 transition-colors cursor-pointer"
+                    title="Remover dos favoritos"
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="1">
+                      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                    </svg>
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
-      )}
-    </div>
+
+        {/* Lado direito - Grid de mapas cadastrados */}
+        <div className="flex-1 min-w-0">
+          <h2 className={`text-2xl sm:text-3xl font-extrabold mb-6 ${theme === 'dark' ? 'text-white' : 'text-[#1B2F55]'}`}>
+            Mapas cadastrados:
+          </h2>
+
+          <div className={`rounded-2xl p-5 sm:p-6 ${theme === 'dark' ? 'bg-[#0f2346]/80 border border-white/10' : 'bg-[#c0cfe6]/50 border border-[#1B2F55]/10'}`}>
+            {mapList.length === 0 ? (
+              <div className="text-center py-12">
+                <span className="text-4xl block mb-3">🗺️</span>
+                <p className={`text-sm ${theme === 'dark' ? 'text-white/50' : 'text-[#1B2F55]/50'}`}>
+                  Nenhum mapa disponível.
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-5">
+                {mapList.map((map) => (
+                  <div
+                    key={map.id}
+                    onClick={() => navigate(`/map-viewer/${map.id}`)}
+                    className={`group rounded-xl overflow-hidden cursor-pointer transition-all duration-200 hover:-translate-y-1 hover:shadow-lg ${
+                      theme === 'dark'
+                        ? 'bg-[#0d203b] border border-white/10 hover:border-blue-400/40'
+                        : 'bg-white border border-[#1B2F55]/10 hover:border-[#4A7FD4]/40'
+                    }`}
+                  >
+                    <div className={`aspect-[4/3] flex items-center justify-center overflow-hidden ${
+                      theme === 'dark' ? 'bg-[#1a3a6e]' : 'bg-[#6b8fc7]'
+                    }`}>
+                      <img
+                        src={`http://localhost:3000${map.imageUrl}`}
+                        alt={map.name}
+                        className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity"
+                      />
+                    </div>
+                    <div className="p-3">
+                      <p className={`text-xs font-semibold truncate ${theme === 'dark' ? 'text-white' : 'text-[#1B2F55]'}`}>
+                        {map.name}
+                      </p>
+                      <p className={`text-[10px] mt-0.5 ${theme === 'dark' ? 'text-white/50' : 'text-[#1B2F55]/50'}`}>
+                        {map.creatorName || 'Administrador'}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </main>
+    </PageLayout>
   );
 }

@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { PageLayout, PageHeader, PageFooter, useTheme } from '../components/PageLayout';
+import { AuthBackground } from '../components/AuthBackground';
 
 function decodeToken(token) {
   try {
@@ -18,11 +20,14 @@ function decodeToken(token) {
 
 export default function MapEditor() {
   const navigate = useNavigate();
+  const [theme, setTheme] = useTheme();
   const [mapList, setMapList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [user, setUser] = useState(null);
   const [newName, setNewName] = useState("");
+  const [newLocation, setNewLocation] = useState("");
+  const [newFloor, setNewFloor] = useState("");
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploading, setUploading] = useState(false);
 
@@ -69,7 +74,8 @@ export default function MapEditor() {
       setUploading(true);
       const token = localStorage.getItem('jwt_token');
       const formData = new FormData();
-      formData.append("name", newName || "Mapa sem nome");
+      const fullName = [newName, newLocation, newFloor].filter(Boolean).join(' - ');
+      formData.append("name", fullName || "Mapa sem nome");
       formData.append("image", selectedFile);
 
       await axios.post("http://localhost:3000/api/maps/upload-image", formData, {
@@ -81,6 +87,8 @@ export default function MapEditor() {
 
       alert("Mapa criado com sucesso!");
       setNewName("");
+      setNewLocation("");
+      setNewFloor("");
       setSelectedFile(null);
       fetchMaps();
     } catch (err) {
@@ -91,136 +99,191 @@ export default function MapEditor() {
     }
   }
 
-  function handleLogout() {
-    localStorage.removeItem('jwt_token');
-    navigate('/login');
-  }
+  const myMaps = mapList.filter((map) => user && map.creatorEmail === user.email);
+
+  const inputClasses = `w-full px-4 py-3 rounded-xl text-sm outline-none transition-colors ${
+    theme === 'dark'
+      ? 'bg-[#0f2346] border border-white/10 text-white placeholder:text-white/30 focus:border-[#4A7FD4]'
+      : 'bg-white border border-[#1B2F55]/15 text-[#1B2F55] placeholder:text-[#1B2F55]/35 focus:border-[#4A7FD4]'
+  }`;
+
+  const labelClasses = `block text-sm font-bold mb-2 ${theme === 'dark' ? 'text-white' : 'text-[#1B2F55]'}`;
 
   if (loading) {
     return (
-      <div style={{ background: '#0a0a1a', minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-        <h1 style={{ color: '#e0e0f0', fontFamily: 'sans-serif' }}>Carregando...</h1>
-      </div>
+      <PageLayout theme={theme} background={<AuthBackground theme={theme} />}>
+        <PageHeader theme={theme} setTheme={setTheme} isLoggedIn />
+        <main className="relative z-10 flex-1 flex items-center justify-center">
+          <p className={`text-lg font-semibold ${theme === 'dark' ? 'text-white/70' : 'text-[#1B2F55]/70'}`}>
+            Carregando...
+          </p>
+        </main>
+      </PageLayout>
     );
   }
 
   if (error) {
     return (
-      <div style={{ background: '#0a0a1a', minHeight: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', fontFamily: 'sans-serif', gap: '20px' }}>
-        <h2 style={{ color: '#ff6b6b' }}>Ops! {error}</h2>
-        <button
-          onClick={fetchMaps}
-          style={{ padding: '10px 20px', background: '#007bff', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
-        >
-          Tentar novamente
-        </button>
-      </div>
+      <PageLayout theme={theme} background={<AuthBackground theme={theme} />}>
+        <PageHeader theme={theme} setTheme={setTheme} isLoggedIn />
+        <main className="relative z-10 flex-1 flex flex-col items-center justify-center gap-4">
+          <p className="text-red-400 text-lg font-semibold">Ops! {error}</p>
+          <button
+            onClick={fetchMaps}
+            className="px-5 py-2 bg-[#F59E0B] text-[#0B1B3B] font-semibold rounded-lg hover:bg-[#d97706] transition-colors cursor-pointer"
+          >
+            Tentar novamente
+          </button>
+        </main>
+      </PageLayout>
     );
   }
 
-  const myMaps = mapList.filter((map) => user && map.creatorEmail === user.email);
-
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: '#0a0a1a', color: '#e0e0f0', fontFamily: "'Inter', sans-serif" }}>
-      <div style={{ width: '320px', padding: '30px', borderRight: '1px solid rgba(255, 255, 255, 0.1)', background: 'rgba(17, 17, 34, 0.75)', backdropFilter: 'blur(12px)', display: 'flex', flexDirection: 'column' }}>
-        <h3 style={{ fontSize: '18px', color: '#e0e0f0', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '24px' }}>➕ Criar Novo Mapa</h3>
+    <PageLayout theme={theme} background={<AuthBackground theme={theme} />}>
+      <PageHeader theme={theme} setTheme={setTheme} isLoggedIn />
 
-        <form onSubmit={handleUpload} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <label style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '12px', color: '#888899', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-            Nome do Mapa:
-            <input
-              type="text"
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              placeholder="Ex: Bloco A, Campus..."
-              style={{ padding: '12px', background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '8px', color: '#e0e0f0', outline: 'none' }}
-              required
-            />
-          </label>
-
-          <label style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '12px', color: '#888899', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-            Imagem do Mapa:
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => setSelectedFile(e.target.files[0])}
-              style={{ padding: '8px 0', color: '#aaa', cursor: 'pointer' }}
-              required
-            />
-          </label>
-
-          <button
-            type="submit"
-            disabled={uploading}
-            style={{ padding: '12px', background: 'linear-gradient(135deg, #4466ff 0%, #aa55ff 100%)', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: '700', cursor: 'pointer', boxShadow: '0 4px 12px rgba(85, 119, 255, 0.3)' }}
-          >
-            {uploading ? "Enviando..." : "Fazer Upload"}
-          </button>
-        </form>
-
-        <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          <button
-            onClick={() => navigate('/map-viewer')}
-            style={{ padding: '10px', background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', color: '#e0e0f0', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}
-          >
-            👁 Ir para o Visualizador
-          </button>
-          <button
-            onClick={handleLogout}
-            style={{ padding: '10px', background: 'rgba(255, 68, 68, 0.1)', border: '1px solid rgba(255, 68, 68, 0.2)', color: '#ff6b6b', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}
-          >
-            Sair
-          </button>
-        </div>
-      </div>
-
-      <div style={{ flex: 1, padding: '40px', overflowY: 'auto' }}>
-        <div style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.1)', paddingBottom: '20px', marginBottom: '30px' }}>
-          <h2 style={{ margin: 0, fontSize: '28px', fontWeight: '700' }}>Painel do Administrador</h2>
-          <p style={{ margin: '4px 0 0 0', color: '#888899', fontSize: '14px' }}>Selecione um dos seus mapas para criar ou editar pontos de interesse:</p>
-        </div>
-
-        {myMaps.length === 0 ? (
-          <p style={{ marginTop: '20px', color: '#888899', fontStyle: 'italic' }}>Você ainda não criou nenhum mapa. Use o formulário ao lado para fazer o upload do primeiro!</p>
-        ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '24px' }}>
-            {myMaps.map((map) => (
-              <div
-                key={map.id}
-                onClick={() => navigate(`/map-editor/${map.id}/pontos`)}
-                style={{
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
-                  borderRadius: '12px',
-                  padding: '16px',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                  background: 'rgba(17, 17, 34, 0.6)',
-                  backdropFilter: 'blur(8px)',
-                  boxShadow: '0 4px 15px rgba(0,0,0,0.2)',
-                  transition: 'transform 0.2s, border-color 0.2s'
-                }}
-                onMouseOver={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-4px)';
-                  e.currentTarget.style.borderColor = '#5577ff';
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
-                }}
-              >
-                <img
-                  src={`http://localhost:3000${map.imageUrl}`}
-                  alt={map.name}
-                  style={{ width: '100%', height: '130px', objectFit: 'cover', borderRadius: '8px', marginBottom: '12px' }}
-                />
-                <h4 style={{ margin: '0 0 4px 0', color: '#e0e0f0', fontSize: '16px', fontWeight: '600' }}>{map.name}</h4>
-                <p style={{ margin: '0 0 8px 0', color: '#888899', fontSize: '12px' }}>Criado por: {map.creatorName || 'Admin'}</p>
-                <small style={{ color: '#5577ff', fontFamily: "'JetBrains Mono', monospace", fontSize: '11px' }}>ID: {map.id}</small>
-              </div>
-            ))}
+      <main className="relative z-10 flex-1 flex flex-col lg:flex-row gap-8 px-6 sm:px-10 lg:px-16 pb-8">
+        {/* Lado esquerdo - Formulário */}
+        <div className="w-full lg:w-[400px] flex-shrink-0">
+          {/* Info do usuário */}
+          <div className="mb-6">
+            <p className={`text-sm font-bold ${theme === 'dark' ? 'text-white' : 'text-[#1B2F55]'}`}>
+              {user?.name || user?.email || 'Administrador'}
+            </p>
+            <p className={`text-xs ${theme === 'dark' ? 'text-white/60' : 'text-[#1B2F55]/60'}`}>
+              Perfil: Administrador
+            </p>
           </div>
-        )}
-      </div>
-    </div>
+
+          <h2 className={`text-2xl font-extrabold mb-6 ${theme === 'dark' ? 'text-white' : 'text-[#1B2F55]'}`}>
+            Cadastrar novo mapa:
+          </h2>
+
+          <form onSubmit={handleUpload} className="flex flex-col gap-5">
+            <div>
+              <label className={labelClasses}>Instituição:</label>
+              <input
+                type="text"
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                placeholder="Selecione o nome da instituição..."
+                className={inputClasses}
+                required
+              />
+            </div>
+
+            <div>
+              <label className={labelClasses}>Local da instituição:</label>
+              <input
+                type="text"
+                value={newLocation}
+                onChange={(e) => setNewLocation(e.target.value)}
+                placeholder="Digite o nome do local..."
+                className={inputClasses}
+              />
+            </div>
+
+            <div>
+              <label className={labelClasses}>Pavimento:</label>
+              <input
+                type="text"
+                value={newFloor}
+                onChange={(e) => setNewFloor(e.target.value)}
+                placeholder="Digite qual o pavimento..."
+                className={inputClasses}
+              />
+            </div>
+
+            <div className="flex flex-wrap gap-3 mt-2">
+              <label
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold cursor-pointer transition-colors ${
+                  theme === 'dark'
+                    ? 'bg-[#2563EB] hover:bg-[#1d4ed8] text-white'
+                    : 'bg-[#3F64A6] hover:bg-[#2F5EA8] text-white'
+                }`}
+              >
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setSelectedFile(e.target.files[0])}
+                  className="hidden"
+                  required
+                />
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="17 8 12 3 7 8"/>
+                  <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+                {selectedFile ? selectedFile.name.substring(0, 20) : 'Fazer upload de imagem'}
+              </label>
+
+              <button
+                type="submit"
+                disabled={uploading}
+                className="flex items-center gap-2 px-5 py-2.5 bg-[#F59E0B] text-[#0B1B3B] rounded-lg text-sm font-semibold hover:bg-[#d97706] transition-colors cursor-pointer disabled:opacity-50"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                  <polyline points="17 21 17 13 7 13 7 21"/>
+                  <polyline points="7 3 7 8 15 8"/>
+                </svg>
+                {uploading ? "Enviando..." : "Salvar novo mapa"}
+              </button>
+            </div>
+          </form>
+        </div>
+
+        {/* Lado direito - Grid de mapas cadastrados */}
+        <div className="flex-1 min-w-0">
+          <h2 className={`text-2xl sm:text-3xl font-extrabold mb-6 ${theme === 'dark' ? 'text-white' : 'text-[#1B2F55]'}`}>
+            Mapas cadastrados:
+          </h2>
+
+          <div className={`rounded-2xl p-5 sm:p-6 ${theme === 'dark' ? 'bg-[#0f2346]/80 border border-white/10' : 'bg-[#c0cfe6]/50 border border-[#1B2F55]/10'}`}>
+            {myMaps.length === 0 ? (
+              <div className="text-center py-12">
+                <span className="text-4xl block mb-3">🗺️</span>
+                <p className={`text-sm ${theme === 'dark' ? 'text-white/50' : 'text-[#1B2F55]/50'}`}>
+                  Você ainda não criou nenhum mapa.
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-5">
+                {myMaps.map((map) => (
+                  <div
+                    key={map.id}
+                    onClick={() => navigate(`/map-editor/${map.id}/pontos`)}
+                    className={`group rounded-xl overflow-hidden cursor-pointer transition-all duration-200 hover:-translate-y-1 hover:shadow-lg ${
+                      theme === 'dark'
+                        ? 'bg-[#0d203b] border border-white/10 hover:border-blue-400/40'
+                        : 'bg-white border border-[#1B2F55]/10 hover:border-[#4A7FD4]/40'
+                    }`}
+                  >
+                    <div className={`aspect-[4/3] flex items-center justify-center overflow-hidden ${
+                      theme === 'dark' ? 'bg-[#1a3a6e]' : 'bg-[#6b8fc7]'
+                    }`}>
+                      <img
+                        src={`http://localhost:3000${map.imageUrl}`}
+                        alt={map.name}
+                        className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity"
+                      />
+                    </div>
+                    <div className="p-3">
+                      <p className={`text-xs font-semibold truncate ${theme === 'dark' ? 'text-white' : 'text-[#1B2F55]'}`}>
+                        {map.name}
+                      </p>
+                      <p className={`text-[10px] mt-0.5 ${theme === 'dark' ? 'text-white/50' : 'text-[#1B2F55]/50'}`}>
+                        {map.creatorName || 'Administrador'}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </main>
+    </PageLayout>
   );
 }

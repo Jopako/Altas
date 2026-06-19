@@ -3,10 +3,14 @@ import { useLocation, useNavigate } from "react-router-dom";
 import AltasMark from "../assets/imgs/altas-mark.svg";
 import { themeClasses } from "../theme";
 
-const navLinks = [
+const publicNavLinks = [
   { label: "Equipe", to: "/TeamPage" },
   { label: "Fale conosco", to: "/FaleConosco" },
   { label: "Instituições", to: "/Instituicoes" },
+];
+
+const loggedInNavLinks = [
+  { label: "Home", to: "/map-viewer" },
 ];
 
 export function useTheme() {
@@ -59,7 +63,7 @@ export function PageLayout({
   );
 }
 
-export function PageHeader({ theme, setTheme, actions }) {
+export function PageHeader({ theme, setTheme, actions, isLoggedIn = false }) {
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -83,7 +87,7 @@ export function PageHeader({ theme, setTheme, actions }) {
         }`}
         aria-label="Navegação principal"
       >
-        {navLinks.map((link) => {
+        {(isLoggedIn ? loggedInNavLinks : publicNavLinks).map((link) => {
           const isActive = location.pathname === link.to;
           const base = isActive
             ? theme === "dark"
@@ -118,7 +122,7 @@ export function PageHeader({ theme, setTheme, actions }) {
           Mapeamento institucional
         </p>
 
-        {location.pathname !== "/login" && location.pathname !== "/Login" ? (
+        {!isLoggedIn && location.pathname !== "/login" && location.pathname !== "/Login" ? (
           <button
             type="button"
             onClick={() => navigate("/login")}

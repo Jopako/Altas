@@ -8,6 +8,8 @@ import {
 } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { PageLayout, PageHeader, PageFooter, useTheme } from '../components/PageLayout';
+import { AuthBackground } from '../components/AuthBackground';
 
 const bounds = [
   [0, 0],
@@ -31,6 +33,7 @@ function decodeToken(token) {
 export default function MapViewer() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [theme, setTheme] = useTheme();
   
   const [mapData, setMapData] = useState(null);
   const [mapList, setMapList] = useState([]);
@@ -133,114 +136,126 @@ export default function MapViewer() {
     navigate('/login');
   }
 
+  const token = localStorage.getItem('jwt_token');
+  const user = token ? decodeToken(token) : null;
+  const isAdmin = user && user.role === 'admin';
+
   if (loading) {
     return (
-      <div style={{ background: '#0a0a1a', minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-        <h1 style={{ color: '#e0e0f0', fontFamily: 'sans-serif' }}>Carregando dados...</h1>
-      </div>
+      <PageLayout theme={theme} background={<AuthBackground theme={theme} />}>
+        <PageHeader theme={theme} setTheme={setTheme} isLoggedIn />
+        <main className="relative z-10 flex-1 flex items-center justify-center">
+          <p className={`text-lg font-semibold ${theme === 'dark' ? 'text-white/70' : 'text-[#1B2F55]/70'}`}>
+            Carregando dados...
+          </p>
+        </main>
+      </PageLayout>
     );
   }
 
   if (error) {
     return (
-      <div style={{ background: '#0a0a1a', minHeight: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', fontFamily: 'sans-serif', gap: '20px' }}>
-        <h2 style={{ color: '#ff6b6b' }}>Ops! {error}</h2>
-        <button 
-          onClick={() => navigate('/map-viewer')}
-          style={{ padding: '10px 20px', background: '#007bff', color: '#white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
-        >
-          Voltar para a Galeria
-        </button>
-      </div>
+      <PageLayout theme={theme} background={<AuthBackground theme={theme} />}>
+        <PageHeader theme={theme} setTheme={setTheme} isLoggedIn />
+        <main className="relative z-10 flex-1 flex flex-col items-center justify-center gap-4">
+          <p className="text-red-400 text-lg font-semibold">Ops! {error}</p>
+          <button
+            onClick={() => navigate('/map-viewer')}
+            className="px-5 py-2 bg-[#F59E0B] text-[#0B1B3B] font-semibold rounded-lg hover:bg-[#d97706] transition-colors cursor-pointer"
+          >
+            Voltar para a Galeria
+          </button>
+        </main>
+      </PageLayout>
     );
   }
-
-  const token = localStorage.getItem('jwt_token');
-  const user = token ? decodeToken(token) : null;
-  const isAdmin = user && user.role === 'admin';
 
   // TELA 1: Se o ID estiver ausente na URL, mostra a galeria de mapas
   if (!id) {
     return (
-      <div style={{ background: '#0a0a1a', minHeight: '100vh', padding: '40px', fontFamily: "'Inter', sans-serif", color: '#e0e0f0' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', paddingBottom: '20px', marginBottom: '30px' }}>
-          <div>
-            <h1 style={{ margin: 0, fontSize: '32px', fontFamily: "'JetBrains Mono', monospace", background: 'linear-gradient(135deg, #4466ff 0%, #aa55ff 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', fontWeight: '700' }}>🗺️ ALTAS</h1>
-            <p style={{ margin: '4px 0 0 0', color: '#888899', fontSize: '14px', textTransform: 'uppercase', letterSpacing: '1px' }}>Galeria de Mapas Disponíveis</p>
-          </div>
-          
-          <div style={{ display: 'flex', gap: '12px' }}>
-            {isAdmin ? (
-              <button 
-                onClick={() => navigate('/map-editor')}
-                style={{ padding: '10px 20px', background: 'linear-gradient(135deg, #00b4db 0%, #0083b0 100%)', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', boxShadow: '0 4px 12px rgba(0, 180, 219, 0.3)' }}
-              >
-                ➕ Novo Mapa/Ponto de Interesse
-              </button>
-            ) : (
-              <button 
-                onClick={() => navigate('/favoritos')}
-                style={{ padding: '10px 20px', background: 'linear-gradient(135deg, #ff9900 0%, #ff5500 100%)', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', boxShadow: '0 4px 12px rgba(255, 153, 0, 0.3)' }}
-              >
-                ⭐ Favoritos
-              </button>
-            )}
-            <button 
-              onClick={handleLogout}
-              style={{ padding: '10px 20px', background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', color: '#e0e0f0', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}
-            >
-              Sair
-            </button>
-          </div>
-        </div>
+      <PageLayout theme={theme} background={<AuthBackground theme={theme} />}>
+        <PageHeader theme={theme} setTheme={setTheme} isLoggedIn />
 
-        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px', gap: '10px' }}>
-          <span style={{ fontSize: '14px', color: '#888899' }}>Olá, <strong>{user?.name || user?.email || 'Visitante'}</strong> ({user?.role === 'admin' ? 'Administrador' : 'Visitante'})</span>
-        </div>
-        
-        {mapList.length === 0 ? (
-          <p style={{ marginTop: '20px', fontStyle: 'italic', color: '#888899' }}>Nenhum mapa foi publicado no sistema ainda.</p>
-        ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '30px', marginTop: '20px' }}>
-            {mapList.map((map) => (
-              <div 
-                key={map.id} 
-                onClick={() => navigate(`/map-viewer/${map.id}`)}
-                style={{
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
-                  borderRadius: '12px',
-                  padding: '16px',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                  background: 'rgba(17, 17, 34, 0.6)',
-                  backdropFilter: 'blur(8px)',
-                  boxShadow: '0 4px 15px rgba(0,0,0,0.2)',
-                  transition: 'transform 0.2s, border-color 0.2s'
-                }}
-                onMouseOver={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-4px)';
-                  e.currentTarget.style.borderColor = '#5577ff';
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
-                }}
-              >
-                <img 
-                  src={`http://localhost:3000${map.imageUrl}`} 
-                  alt={map.name} 
-                  style={{ width: '100%', height: '160px', objectFit: 'cover', borderRadius: '8px', marginBottom: '14px', border: '1px solid rgba(255, 255, 255, 0.05)' }} 
-                />
-                <h4 style={{ margin: '0 0 4px 0', color: '#e0e0f0', fontSize: '18px', fontWeight: '600' }}>{map.name}</h4>
-                <p style={{ margin: '0 0 10px 0', color: '#888899', fontSize: '13px' }}>
-                  Criado por: <span style={{ color: '#aaa' }}>{map.creatorName || 'Administrador'}</span>
+        <main className="relative z-10 flex-1 px-6 sm:px-10 lg:px-16 pb-8">
+          {/* Info do usuário + Botão ação */}
+          <div className="flex items-start justify-between mb-6">
+            <h2 className={`text-2xl sm:text-3xl font-extrabold ${theme === 'dark' ? 'text-white' : 'text-[#1B2F55]'}`}>
+              Mapas da Instituição
+            </h2>
+
+            <div className="flex flex-col items-end gap-3">
+              <div className="text-right">
+                <p className={`text-sm font-bold ${theme === 'dark' ? 'text-white' : 'text-[#1B2F55]'}`}>
+                  {user?.name || user?.email || 'Usuário'}
                 </p>
-                <small style={{ color: '#5577ff', fontFamily: "'JetBrains Mono', monospace", fontSize: '11px' }}>ID: {map.id}</small>
+                <p className={`text-xs ${theme === 'dark' ? 'text-white/60' : 'text-[#1B2F55]/60'}`}>
+                  Perfil: {isAdmin ? 'Administrador' : 'Visitante'}
+                </p>
               </div>
-            ))}
+
+              {isAdmin ? (
+                <button
+                  onClick={() => navigate('/map-editor')}
+                  className="flex items-center gap-2 px-4 py-2 bg-[#F59E0B] text-[#0B1B3B] text-sm font-semibold rounded-lg hover:bg-[#d97706] transition-colors cursor-pointer"
+                >
+                  <span className="text-lg leading-none">+</span> Novo mapa
+                </button>
+              ) : (
+                <button
+                  onClick={() => navigate('/favoritos')}
+                  className="flex items-center gap-2 px-4 py-2 bg-[#F59E0B] text-[#0B1B3B] text-sm font-semibold rounded-lg hover:bg-[#d97706] transition-colors cursor-pointer"
+                >
+                  ⭐ Favoritos
+                </button>
+              )}
+            </div>
           </div>
-        )}
-      </div>
+
+          {/* Grid container com fundo cinza */}
+          <div className={`rounded-2xl p-6 sm:p-8 ${theme === 'dark' ? 'bg-[#0f2346]/80 border border-white/10' : 'bg-[#c0cfe6]/50 border border-[#1B2F55]/10'}`}>
+            {mapList.length === 0 ? (
+              <div className="text-center py-16">
+                <span className="text-5xl block mb-4">🗺️</span>
+                <p className={`text-sm ${theme === 'dark' ? 'text-white/50' : 'text-[#1B2F55]/50'}`}>
+                  Nenhum mapa foi publicado no sistema ainda.
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
+                {mapList.map((map) => (
+                  <div
+                    key={map.id}
+                    onClick={() => navigate(`/map-viewer/${map.id}`)}
+                    className={`group rounded-xl overflow-hidden cursor-pointer transition-all duration-200 hover:-translate-y-1 hover:shadow-lg ${
+                      theme === 'dark'
+                        ? 'bg-[#0d203b] border border-white/10 hover:border-blue-400/40'
+                        : 'bg-white border border-[#1B2F55]/10 hover:border-[#4A7FD4]/40'
+                    }`}
+                  >
+                    <div className={`aspect-[4/3] flex items-center justify-center overflow-hidden ${
+                      theme === 'dark' ? 'bg-[#1a3a6e]' : 'bg-[#6b8fc7]'
+                    }`}>
+                      <img
+                        src={`http://localhost:3000${map.imageUrl}`}
+                        alt={map.name}
+                        className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity"
+                      />
+                    </div>
+                    <div className="p-3">
+                      <p className={`text-xs font-semibold truncate ${theme === 'dark' ? 'text-white' : 'text-[#1B2F55]'}`}>
+                        {map.name}
+                      </p>
+                      <p className={`text-[10px] mt-0.5 ${theme === 'dark' ? 'text-white/50' : 'text-[#1B2F55]/50'}`}>
+                        {map.creatorName || 'Administrador'}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </main>
+      </PageLayout>
     );
   }
 
@@ -364,8 +379,13 @@ export default function MapViewer() {
   }
 
   return (
-    <div style={{ background: '#0a0a1a', minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-      <h1 style={{ color: '#e0e0f0', fontFamily: 'sans-serif' }}>Carregando dados do mapa...</h1>
-    </div>
+    <PageLayout theme={theme} background={<AuthBackground theme={theme} />}>
+      <PageHeader theme={theme} setTheme={setTheme} isLoggedIn />
+      <main className="relative z-10 flex-1 flex items-center justify-center">
+        <p className={`text-lg font-semibold ${theme === 'dark' ? 'text-white/70' : 'text-[#1B2F55]/70'}`}>
+          Carregando dados do mapa...
+        </p>
+      </main>
+    </PageLayout>
   );
 }

@@ -6,6 +6,8 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "leaflet-draw/dist/leaflet.draw.css";
 import "leaflet-draw";
+import { PageLayout, PageHeader, PageFooter, useTheme } from '../components/PageLayout';
+import { AuthBackground } from '../components/AuthBackground';
 
 const bounds = [
   [0, 0],
@@ -175,17 +177,12 @@ function MapSetup({ activeTool, featureGroupRef, selectedLayerRef, selectLayerHa
 export default function MapPoiEditor() {
   const { id } = useParams(); 
   const navigate = useNavigate();
+  const [theme, setTheme] = useTheme();
   
   const [mapData, setMapData] = useState(null);
-  const [mapList, setMapList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [user, setUser] = useState(null);
-
-  // Estados para o formulário de Upload
-  const [newName, setNewName] = useState("");
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [uploading, setUploading] = useState(false);
 
   // Estados para edição do POI
   const [selectedLayerKey, setSelectedLayerKey] = useState(null);
@@ -216,20 +213,12 @@ export default function MapPoiEditor() {
     setUser(decoded);
   }, [navigate]);
 
-  async function fetchMaps() {
-    try {
-      setLoading(true);
-      const res = await axios.get("http://localhost:3000/api/maps");
-      setMapList(res.data);
-      setMapData(null);
-      setError(null);
-    } catch (err) {
-      console.error("Erro ao listar mapas:", err);
-      setError("Erro ao carregar a lista de mapas.");
-    } finally {
-      setLoading(false);
+  // Se não tiver ID, redireciona para o MapEditor
+  useEffect(() => {
+    if (!id) {
+      navigate('/map-editor');
     }
-  }
+  }, [id, navigate]);
 
   useEffect(() => {
     if (id) {
@@ -247,41 +236,8 @@ export default function MapPoiEditor() {
         }
       }
       loadMap();
-    } else {
-      fetchMaps();
     }
   }, [id]);
-
-  async function handleUpload(e) {
-    e.preventDefault();
-    if (!selectedFile) return alert("Selecione uma imagem primeiro!");
-
-    try {
-      setUploading(true);
-      const token = localStorage.getItem('jwt_token');
-
-      const formData = new FormData();
-      formData.append("name", newName || "Mapa sem nome");
-      formData.append("image", selectedFile);
-
-      await axios.post("http://localhost:3000/api/maps/upload-image", formData, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "multipart/form-data"
-        }
-      });
-
-      alert("Mapa criado com sucesso!");
-      setNewName("");
-      setSelectedFile(null);
-      fetchMaps();
-    } catch (err) {
-      console.error("Erro no upload:", err);
-      alert(err.response?.data?.error || "Erro ao fazer upload. Você está logado como Admin?");
-    } finally {
-      setUploading(false);
-    }
-  }
 
   async function saveFeatures() {
     try {
@@ -369,30 +325,9 @@ export default function MapPoiEditor() {
     clearPoiForm();
   }
 
-  function handleLogout() {
-    localStorage.removeItem('jwt_token');
-    navigate('/login');
-  }
-
-
   function selectMappingTool(tool) {
     clearPoiForm();
     setActiveTool(tool);
-  }
-
-  function getToolButtonStyle(tool) {
-    const isActive = activeTool === tool;
-    return {
-      padding: '9px 12px',
-      background: isActive ? 'linear-gradient(135deg, #00d4ff, #5577ff)' : 'rgba(255,255,255,0.07)',
-      border: isActive ? '1px solid rgba(0,212,255,0.85)' : '1px solid rgba(255,255,255,0.12)',
-      color: '#fff',
-      borderRadius: '8px',
-      cursor: 'pointer',
-      fontWeight: '700',
-      fontSize: '12px',
-      boxShadow: isActive ? '0 8px 20px rgba(0, 212, 255, 0.24)' : 'none'
-    };
   }
 
   const activeToolHint = {
@@ -401,298 +336,281 @@ export default function MapPoiEditor() {
     polygon: 'Selecionar local: clique nos cantos da área seguindo as linhas da planta e finalize clicando no primeiro ponto.'
   }[activeTool];
 
+  const inputClasses = `w-full px-4 py-3 rounded-xl text-sm outline-none transition-colors ${
+    theme === 'dark'
+      ? 'bg-[#0f2346] border border-white/10 text-white placeholder:text-white/30 focus:border-[#4A7FD4]'
+      : 'bg-white border border-[#1B2F55]/15 text-[#1B2F55] placeholder:text-[#1B2F55]/35 focus:border-[#4A7FD4]'
+  }`;
+
+  const labelClasses = `block text-sm font-bold mb-2 ${theme === 'dark' ? 'text-white' : 'text-[#1B2F55]'}`;
+
+  if (!id) return null; // Will redirect via useEffect
+
   if (loading) {
     return (
-      <div style={{ background: '#0a0a1a', minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-        <h1 style={{ color: '#e0e0f0', fontFamily: 'sans-serif' }}>Carregando...</h1>
-      </div>
+      <PageLayout theme={theme} background={<AuthBackground theme={theme} />}>
+        <PageHeader theme={theme} setTheme={setTheme} isLoggedIn />
+        <main className="relative z-10 flex-1 flex items-center justify-center">
+          <p className={`text-lg font-semibold ${theme === 'dark' ? 'text-white/70' : 'text-[#1B2F55]/70'}`}>
+            Carregando...
+          </p>
+        </main>
+      </PageLayout>
     );
   }
 
   if (error) {
     return (
-      <div style={{ background: '#0a0a1a', minHeight: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', fontFamily: 'sans-serif', gap: '20px' }}>
-        <h2 style={{ color: '#ff6b6b' }}>Ops! {error}</h2>
-        <button 
-          onClick={() => navigate('/map-editor')}
-          style={{ padding: '10px 20px', background: '#007bff', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
-        >
-          Voltar para a Lista
-        </button>
-      </div>
-    );
-  }
-
-  // TELA 1: LISTAGEM + FORMULÁRIO DE UPLOAD
-  if (!id) {
-    return (
-      <div style={{ display: 'flex', minHeight: '100vh', background: '#0a0a1a', color: '#e0e0f0', fontFamily: "'Inter', sans-serif" }}>
-        
-        {/* BARRA LATERAL: Formulário de Upload */}
-        <div style={{ width: '320px', padding: '30px', borderRight: '1px solid rgba(255, 255, 255, 0.1)', background: 'rgba(17, 17, 34, 0.75)', backdropFilter: 'blur(12px)', display: 'flex', flexDirection: 'column' }}>
-          <h3 style={{ fontSize: '18px', color: '#e0e0f0', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '24px' }}>➕ Criar Novo Mapa</h3>
-          
-          <form onSubmit={handleUpload} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            <label style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '12px', color: '#888899', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              Nome do Mapa:
-              <input 
-                type="text" 
-                value={newName} 
-                onChange={(e) => setNewName(e.target.value)} 
-                placeholder="Ex: Bloco A, Campus..." 
-                style={{ padding: '12px', background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '8px', color: '#e0e0f0', outline: 'none' }}
-                required
-              />
-            </label>
-
-            <label style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '12px', color: '#888899', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              Imagem do Mapa:
-              <input 
-                type="file" 
-                accept="image/*" 
-                onChange={(e) => setSelectedFile(e.target.files[0])} 
-                style={{ padding: '8px 0', color: '#aaa', cursor: 'pointer' }}
-                required
-              />
-            </label>
-
-            <button 
-              type="submit" 
-              disabled={uploading}
-              style={{ padding: '12px', background: 'linear-gradient(135deg, #4466ff 0%, #aa55ff 100%)', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: '700', cursor: 'pointer', boxShadow: '0 4px 12px rgba(85, 119, 255, 0.3)' }}
-            >
-              {uploading ? "Enviando..." : "Fazer Upload"}
-            </button>
-          </form>
-
-          <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            <button 
-              onClick={() => navigate('/map-viewer')}
-              style={{ padding: '10px', background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', color: '#e0e0f0', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}
-            >
-              👁 Ir para o Visualizador
-            </button>
-            <button 
-              onClick={handleLogout}
-              style={{ padding: '10px', background: 'rgba(255, 68, 68, 0.1)', border: '1px solid rgba(255, 68, 68, 0.2)', color: '#ff6b6b', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}
-            >
-              Sair
-            </button>
-          </div>
-        </div>
-
-        {/* ÁREA PRINCIPAL: Grid de Mapas */}
-        <div style={{ flex: 1, padding: '40px', overflowY: 'auto' }}>
-          <div style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.1)', paddingBottom: '20px', marginBottom: '30px' }}>
-            <h2 style={{ margin: 0, fontSize: '28px', fontWeight: '700' }}>Painel do Administrador</h2>
-            <p style={{ margin: '4px 0 0 0', color: '#888899', fontSize: '14px' }}>Selecione um mapa abaixo para editar e posicionar pontos de interesse:</p>
-          </div>
-
-          {(() => {
-            const myMaps = mapList.filter(m => user && m.creatorEmail === user.email);
-            return myMaps.length === 0 ? (
-              <p style={{ marginTop: '20px', color: '#888899', fontStyle: 'italic' }}>Você ainda não criou nenhum mapa. Use o formulário ao lado para fazer o upload do primeiro!</p>
-            ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '24px' }}>
-                {myMaps.map((map) => (
-                  <div
-                    key={map.id}
-                    onClick={() => navigate(`/map-editor/${map.id}`)}
-                    style={{
-                      border: '1px solid rgba(255, 255, 255, 0.1)',
-                      borderRadius: '12px',
-                      padding: '16px',
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                      background: 'rgba(17, 17, 34, 0.6)',
-                      backdropFilter: 'blur(8px)',
-                      boxShadow: '0 4px 15px rgba(0,0,0,0.2)',
-                      transition: 'transform 0.2s, border-color 0.2s'
-                    }}
-                    onMouseOver={(e) => {
-                      e.currentTarget.style.transform = 'translateY(-4px)';
-                      e.currentTarget.style.borderColor = '#5577ff';
-                    }}
-                    onMouseOut={(e) => {
-                      e.currentTarget.style.transform = 'translateY(0)';
-                      e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
-                    }}
-                  >
-                    <img
-                      src={`http://localhost:3000${map.imageUrl}`}
-                      alt={map.name}
-                      style={{ width: '100%', height: '130px', objectFit: 'cover', borderRadius: '8px', marginBottom: '12px' }}
-                    />
-                    <h4 style={{ margin: '0 0 4px 0', color: '#e0e0f0', fontSize: '16px', fontWeight: '600' }}>{map.name}</h4>
-                    <p style={{ margin: '0 0 8px 0', color: '#888899', fontSize: '12px' }}>Criado por: {map.creatorName || 'Admin'}</p>
-                    <small style={{ color: '#5577ff', fontFamily: "'JetBrains Mono', monospace", fontSize: '11px' }}>ID: {map.id}</small>
-                  </div>
-                ))}
-              </div>
-            );
-          })()}
-        </div>
-
-      </div>
-    );
-  }
-
-  // TELA 2: EDITOR DO LEAFLET — Layout lado a lado
-  return (
-    <div style={{ background: '#0a0a1a', height: '100vh', display: 'flex', flexDirection: 'column', color: '#e0e0f0', fontFamily: "'Inter', sans-serif" }}>
-      {/* Topbar */}
-      <div style={{ padding: '12px 24px', background: 'rgba(17, 17, 34, 0.9)', borderBottom: '1px solid rgba(255,255,255,0.1)', display: 'flex', gap: '12px', alignItems: 'center', flexShrink: 0 }}>
-        <button
-          onClick={() => navigate('/map-editor')}
-          style={{ padding: '8px 16px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#e0e0f0', borderRadius: '8px', cursor: 'pointer', fontWeight: '600', fontSize: '13px' }}
-        >
-          ⬅ Lista de Mapas
-        </button>
-        <button
-          onClick={saveFeatures}
-          style={{ padding: '8px 16px', background: 'linear-gradient(135deg, #28a745, #20c85a)', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', fontSize: '13px', boxShadow: '0 4px 12px rgba(40,167,69,0.3)' }}
-        >
-          💾 Salvar Alterações
-        </button>
-        <span style={{ marginLeft: 'auto', fontSize: '13px', color: '#888899' }}>
-          Editando: <strong style={{ color: '#e0e0f0' }}>{mapData?.name}</strong>
-        </span>
-      </div>
-
-      {/* Corpo: Mapa (65%) + Painel POI (35%) */}
-      <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-
-        {/* MAPA */}
-        <div style={{ flex: '0 0 65%', position: 'relative' }}>
-          <MapContainer
-            crs={L.CRS.Simple}
-            bounds={bounds}
-            maxBounds={bounds}
-            maxBoundsViscosity={0.8}
-            style={{ height: '100%', width: '100%' }}
+      <PageLayout theme={theme} background={<AuthBackground theme={theme} />}>
+        <PageHeader theme={theme} setTheme={setTheme} isLoggedIn />
+        <main className="relative z-10 flex-1 flex flex-col items-center justify-center gap-4">
+          <p className="text-red-400 text-lg font-semibold">Ops! {error}</p>
+          <button
+            onClick={() => navigate('/map-editor')}
+            className="px-5 py-2 bg-[#F59E0B] text-[#0B1B3B] font-semibold rounded-lg hover:bg-[#d97706] transition-colors cursor-pointer"
           >
-            <ImageOverlay
-              url={`http://localhost:3000${mapData?.imageUrl}`}
-              bounds={bounds}
-            />
-            <FeatureGroup ref={featureGroupRef}>
-              <GeoJSON key={id} data={mapData?.features} onEachFeature={(_feature, layer) => {
-                applyDefaultLayerStyle(layer);
-                layer.on('click', (event) => {
-                  if (event.originalEvent) {
-                    L.DomEvent.stopPropagation(event.originalEvent);
-                  }
-                  selectLayer(layer);
-                });
-              }} />
-            </FeatureGroup>
-            <MapSetup
-              activeTool={activeTool}
-              featureGroupRef={featureGroupRef}
-              selectedLayerRef={selectedLayerRef}
-              selectLayerHandlerRef={selectLayerHandlerRef}
-              setActiveTool={setActiveTool}
-            />
-          </MapContainer>
-          <div style={{ position: 'absolute', top: '16px', right: '16px', zIndex: 1000, width: 'min(420px, calc(100% - 32px))', background: 'rgba(10,10,26,0.86)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '12px', padding: '12px', boxShadow: '0 18px 45px rgba(0,0,0,0.32)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'center', marginBottom: '10px' }}>
-              <strong style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.8px', color: '#e0e0f0' }}>Ferramentas de mapeamento</strong>
-              <span style={{ fontSize: '11px', color: '#8899aa' }}>GeoJSON</span>
-            </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-              <button type="button" onClick={() => selectMappingTool('select')} style={getToolButtonStyle('select')}>Selecionar</button>
-              <button type="button" onClick={() => selectMappingTool('point')} style={getToolButtonStyle('point')}>Ponto específico</button>
-              <button type="button" onClick={() => selectMappingTool('polygon')} style={getToolButtonStyle('polygon')}>Selecionar local</button>
-            </div>
-            <p style={{ margin: '10px 0 0 0', fontSize: '11px', lineHeight: 1.45, color: '#aab0c0' }}>{activeToolHint}</p>
-          </div>
-          {!selectedLayerKey && (
-            <div style={{ position: 'absolute', bottom: '16px', left: '50%', transform: 'translateX(-50%)', zIndex: 1000, background: 'rgba(17,17,34,0.8)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '8px 18px', fontSize: '12px', color: '#888899', pointerEvents: 'none', whiteSpace: 'nowrap' }}>
-              {activeToolHint}
-            </div>
-          )}
-        </div>
+            Voltar para a Lista
+          </button>
+        </main>
+      </PageLayout>
+    );
+  }
 
-        {/* PAINEL POI */}
-        <div style={{ flex: '0 0 35%', background: 'rgba(17,17,34,0.95)', borderLeft: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', overflowY: 'auto', padding: '24px' }}>
-          <h3 style={{ margin: '0 0 6px 0', fontSize: '15px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '1px' }}>
-            {selectedLayerKey ? (selectedLayerKind === 'area' ? '✏️ Editar Área Mapeada' : '✏️ Editar Ponto de Interesse') : '📍 Mapeamento'}
-          </h3>
-          <p style={{ margin: '0 0 24px 0', fontSize: '12px', color: '#888899', lineHeight: '1.5' }}>
-            {selectedLayerKey
-              ? 'Preencha os dados abaixo e clique em "Confirmar Mapeamento".'
-              : 'Use as ferramentas no mapa para criar um ponto ou contornar uma área.'}
-          </p>
+  // TELA: EDITOR DO LEAFLET — Layout lado a lado dentro do PageLayout
+  return (
+    <PageLayout theme={theme} background={<AuthBackground theme={theme} />} bottomBar={false} showFooter={false}>
+      <PageHeader theme={theme} setTheme={setTheme} isLoggedIn />
+
+      <main className="relative z-10 flex-1 flex flex-col lg:flex-row overflow-hidden" style={{ minHeight: 0 }}>
+        {/* Lado esquerdo - Formulário POI */}
+        <div className={`w-full lg:w-[400px] flex-shrink-0 overflow-y-auto px-6 sm:px-10 py-6 flex flex-col`}>
+          {/* Info do usuário */}
+          <div className="mb-4">
+            <p className={`text-sm font-bold ${theme === 'dark' ? 'text-white' : 'text-[#1B2F55]'}`}>
+              {user?.name || user?.email || 'Administrador'}
+            </p>
+            <p className={`text-xs ${theme === 'dark' ? 'text-white/60' : 'text-[#1B2F55]/60'}`}>
+              Perfil: Administrador
+            </p>
+          </div>
+
+          <h2 className={`text-xl font-extrabold mb-5 ${theme === 'dark' ? 'text-white' : 'text-[#1B2F55]'}`}>
+            Adicionar pontos de interesse:
+          </h2>
 
           {selectedLayerKey ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <label style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '11px', color: '#888899', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                Nome do Mapeamento
+            <div className="flex flex-col gap-4">
+              <div>
+                <label className={labelClasses}>Nome:</label>
                 <input
                   type="text"
                   value={poiName}
                   onChange={(e) => setPoiName(e.target.value)}
-                  placeholder="Ex: Secretaria, Lab de Informática..."
-                  style={{ padding: '10px 12px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#e0e0f0', outline: 'none', fontSize: '13px' }}
+                  placeholder="Nome do novo ponto de interesse..."
+                  className={inputClasses}
                 />
-              </label>
+              </div>
 
-              <label style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '11px', color: '#888899', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                Descrição
+              <div>
+                <label className={labelClasses}>Descrição:</label>
                 <textarea
                   value={poiDescription}
                   onChange={(e) => setPoiDescription(e.target.value)}
-                  placeholder="Descreva o local, horário de funcionamento, etc."
+                  placeholder="Digite a descrição do local..."
                   rows={4}
-                  style={{ padding: '10px 12px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#e0e0f0', outline: 'none', resize: 'vertical', fontFamily: 'inherit', fontSize: '13px' }}
+                  className={`${inputClasses} resize-vertical`}
                 />
-              </label>
+              </div>
 
-              <label style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '11px', color: '#888899', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                Foto do Local
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => handlePoiPhotoUpload(e.target.files[0])}
-                  style={{ color: '#aaa', cursor: 'pointer', fontSize: '12px' }}
-                />
-              </label>
-
-              {uploadingPoiPhoto && <p style={{ color: '#5577ff', fontSize: '12px', margin: 0 }}>⏳ Enviando foto...</p>}
+              {uploadingPoiPhoto && (
+                <p className={`text-xs ${theme === 'dark' ? 'text-blue-300' : 'text-[#3F64A6]'}`}>
+                  ⏳ Enviando foto...
+                </p>
+              )}
 
               {poiPhotoUrl && (
                 <div>
-                  <p style={{ margin: '0 0 6px 0', fontSize: '11px', color: '#888899', fontWeight: '600', textTransform: 'uppercase' }}>Foto Atual</p>
+                  <p className={`text-xs font-bold mb-1 ${theme === 'dark' ? 'text-white/50' : 'text-[#1B2F55]/50'}`}>
+                    Foto Atual:
+                  </p>
                   <img
                     src={`http://localhost:3000${poiPhotoUrl}`}
                     alt="foto ponto"
-                    style={{ width: '100%', borderRadius: '8px', objectFit: 'cover', maxHeight: '160px', border: '1px solid rgba(255,255,255,0.08)' }}
+                    className={`w-full rounded-lg object-cover max-h-[140px] border ${
+                      theme === 'dark' ? 'border-white/10' : 'border-[#1B2F55]/10'
+                    }`}
                   />
                 </div>
               )}
 
+              <div className="flex flex-wrap gap-3 mt-2">
+                <label
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-semibold cursor-pointer transition-colors ${
+                    theme === 'dark'
+                      ? 'bg-[#2563EB] hover:bg-[#1d4ed8] text-white'
+                      : 'bg-[#3F64A6] hover:bg-[#2F5EA8] text-white'
+                  }`}
+                >
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handlePoiPhotoUpload(e.target.files[0])}
+                    className="hidden"
+                  />
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="17 8 12 3 7 8"/>
+                    <line x1="12" y1="3" x2="12" y2="15"/>
+                  </svg>
+                  Fazer upload de imagem
+                </label>
+
+                <button
+                  type="button"
+                  onClick={() => selectMappingTool(activeTool === 'point' ? 'select' : 'point')}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-semibold cursor-pointer transition-colors ${
+                    theme === 'dark'
+                      ? 'bg-[#2563EB] hover:bg-[#1d4ed8] text-white'
+                      : 'bg-[#3F64A6] hover:bg-[#2F5EA8] text-white'
+                  }`}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="10" r="3"/>
+                    <path d="M12 21.7C17.3 17 20 13 20 10a8 8 0 1 0-16 0c0 3 2.7 7 8 11.7z"/>
+                  </svg>
+                  Adicionar ponto no mapa
+                </button>
+              </div>
+
               <button
                 onClick={applyPoiChanges}
-                style={{ padding: '12px', background: 'linear-gradient(135deg, #4466ff, #aa55ff)', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: '700', cursor: 'pointer', fontSize: '14px', boxShadow: '0 4px 12px rgba(85,119,255,0.3)' }}
+                className="flex items-center justify-center gap-2 w-full px-5 py-2.5 bg-[#F59E0B] text-[#0B1B3B] rounded-lg text-sm font-semibold hover:bg-[#d97706] transition-colors cursor-pointer mt-1"
               >
-                ✅ Confirmar Mapeamento
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                  <polyline points="17 21 17 13 7 13 7 21"/>
+                  <polyline points="7 3 7 8 15 8"/>
+                </svg>
+                Salvar ponto de interesse
               </button>
+
               <button
                 onClick={clearPoiForm}
-                style={{ padding: '10px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: '#888899', borderRadius: '8px', cursor: 'pointer', fontSize: '13px' }}
+                className={`text-xs px-3 py-2 rounded-lg cursor-pointer transition-colors ${
+                  theme === 'dark'
+                    ? 'text-white/50 hover:text-white/80 bg-white/5 hover:bg-white/10'
+                    : 'text-[#1B2F55]/50 hover:text-[#1B2F55]/80 bg-[#1B2F55]/5 hover:bg-[#1B2F55]/10'
+                }`}
               >
                 Cancelar
               </button>
             </div>
           ) : (
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '12px', opacity: 0.35 }}>
-              <span style={{ fontSize: '52px' }}>📍</span>
-              <p style={{ margin: 0, fontSize: '13px', color: '#888899', textAlign: 'center' }}>Nenhum ponto selecionado</p>
+            <div className="flex-1 flex flex-col gap-5">
+              <p className={`text-sm ${theme === 'dark' ? 'text-white/50' : 'text-[#1B2F55]/50'}`}>
+                Use as ferramentas abaixo para criar um ponto ou contornar uma área no mapa, depois preencha os dados.
+              </p>
+
+              {/* Ferramentas de mapeamento */}
+              <div className="flex flex-col gap-3">
+                <p className={`text-xs font-bold uppercase tracking-wider ${theme === 'dark' ? 'text-white/40' : 'text-[#1B2F55]/40'}`}>
+                  Ferramentas
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { key: 'select', label: 'Selecionar' },
+                    { key: 'point', label: 'Ponto específico' },
+                    { key: 'polygon', label: 'Selecionar local' },
+                  ].map(tool => (
+                    <button
+                      key={tool.key}
+                      type="button"
+                      onClick={() => selectMappingTool(tool.key)}
+                      className={`px-3 py-2 rounded-lg text-xs font-semibold cursor-pointer transition-all ${
+                        activeTool === tool.key
+                          ? 'bg-[#F59E0B] text-[#0B1B3B] shadow-md'
+                          : theme === 'dark'
+                            ? 'bg-white/10 text-white/70 hover:bg-white/15'
+                            : 'bg-[#1B2F55]/10 text-[#1B2F55]/70 hover:bg-[#1B2F55]/15'
+                      }`}
+                    >
+                      {tool.label}
+                    </button>
+                  ))}
+                </div>
+                <p className={`text-xs leading-relaxed ${theme === 'dark' ? 'text-white/40' : 'text-[#1B2F55]/40'}`}>
+                  {activeToolHint}
+                </p>
+              </div>
+
+              {/* Botão salvar geral */}
+              <button
+                onClick={saveFeatures}
+                className="flex items-center justify-center gap-2 w-full px-5 py-2.5 bg-[#F59E0B] text-[#0B1B3B] rounded-lg text-sm font-semibold hover:bg-[#d97706] transition-colors cursor-pointer mt-auto"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                  <polyline points="17 21 17 13 7 13 7 21"/>
+                  <polyline points="7 3 7 8 15 8"/>
+                </svg>
+                💾 Salvar Alterações no Mapa
+              </button>
+
+              <button
+                onClick={() => navigate('/map-editor')}
+                className={`text-xs px-3 py-2 rounded-lg cursor-pointer transition-colors ${
+                  theme === 'dark'
+                    ? 'text-white/50 hover:text-white/80 bg-white/5 hover:bg-white/10'
+                    : 'text-[#1B2F55]/50 hover:text-[#1B2F55]/80 bg-[#1B2F55]/5 hover:bg-[#1B2F55]/10'
+                }`}
+              >
+                ⬅ Voltar para lista de mapas
+              </button>
             </div>
           )}
         </div>
 
-      </div>
-    </div>
+        {/* Lado direito - Mapa Leaflet */}
+        <div className="flex-1 relative min-h-[400px] lg:min-h-0">
+          <div className={`absolute inset-2 rounded-2xl overflow-hidden shadow-xl border ${
+            theme === 'dark' ? 'border-white/10' : 'border-[#1B2F55]/15'
+          }`}>
+            <MapContainer
+              crs={L.CRS.Simple}
+              bounds={bounds}
+              maxBounds={bounds}
+              maxBoundsViscosity={0.8}
+              style={{ height: '100%', width: '100%' }}
+            >
+              <ImageOverlay
+                url={`http://localhost:3000${mapData?.imageUrl}`}
+                bounds={bounds}
+              />
+              <FeatureGroup ref={featureGroupRef}>
+                <GeoJSON key={id} data={mapData?.features} onEachFeature={(_feature, layer) => {
+                  applyDefaultLayerStyle(layer);
+                  layer.on('click', (event) => {
+                    if (event.originalEvent) {
+                      L.DomEvent.stopPropagation(event.originalEvent);
+                    }
+                    selectLayer(layer);
+                  });
+                }} />
+              </FeatureGroup>
+              <MapSetup
+                activeTool={activeTool}
+                featureGroupRef={featureGroupRef}
+                selectedLayerRef={selectedLayerRef}
+                selectLayerHandlerRef={selectLayerHandlerRef}
+                setActiveTool={setActiveTool}
+              />
+            </MapContainer>
+          </div>
+        </div>
+      </main>
+
+      {/* Footer */}
+      <PageFooter theme={theme} />
+    </PageLayout>
   );
 }
