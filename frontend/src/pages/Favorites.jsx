@@ -72,15 +72,15 @@ export default function Favorites() {
           if (map && map.features && map.features.features) {
             const poi = map.features.features.find(f => f.properties && f.properties.id === poiId);
             if (poi) {
-              resolvedList.push({
-                mapId,
-                mapName: map.name,
-                poiId,
-                name: poi.properties.name || 'Sem nome',
-                description: poi.properties.description || 'Sem descrição',
-                photoUrl: poi.properties.photoUrl || '',
-                institutionName: map.creatorName || 'Instituição',
-              });
+                resolvedList.push({
+                  mapId,
+                  mapName: map.name,
+                  poiId,
+                  name: poi.properties.name || 'Sem nome',
+                  description: poi.properties.description || 'Sem descrição',
+                  photoUrl: poi.properties.photoUrl || '',
+                  institutionName: map.creatorName || 'Admin responsável',
+                });
             }
           }
         }
@@ -207,10 +207,10 @@ export default function Favorites() {
                       <span className="font-bold">Mapa:</span> {item.mapName}
                     </p>
                     <p className={`text-[10px] mb-0.5 ${theme === 'dark' ? 'text-white/40' : 'text-[#1B2F55]/40'}`}>
-                      <span className="font-bold">Instituição:</span> {item.institutionName}
+                      <span className="font-bold">Admin responsável:</span> {item.institutionName}
                     </p>
                     <p className={`text-[10px] mb-0.5 ${theme === 'dark' ? 'text-white/40' : 'text-[#1B2F55]/40'}`}>
-                      <span className="font-bold">Nome do Local:</span> {item.name}
+                      <span className="font-bold">Nome do ponto:</span> {item.name}
                     </p>
                     <p className={`text-[10px] leading-relaxed ${theme === 'dark' ? 'text-white/40' : 'text-[#1B2F55]/40'}`}>
                       <span className="font-bold">Descrição:</span> {item.description}

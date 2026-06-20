@@ -26,8 +26,6 @@ export default function MapEditor() {
   const [error, setError] = useState(null);
   const [user, setUser] = useState(null);
   const [newName, setNewName] = useState("");
-  const [newLocation, setNewLocation] = useState("");
-  const [newFloor, setNewFloor] = useState("");
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploading, setUploading] = useState(false);
 
@@ -74,8 +72,7 @@ export default function MapEditor() {
       setUploading(true);
       const token = localStorage.getItem('jwt_token');
       const formData = new FormData();
-      const fullName = [newName, newLocation, newFloor].filter(Boolean).join(' - ');
-      formData.append("name", fullName || "Mapa sem nome");
+      formData.append("name", newName.trim() || "Mapa sem nome");
       formData.append("image", selectedFile);
 
       await axios.post("http://localhost:3000/api/maps/upload-image", formData, {
@@ -87,8 +84,6 @@ export default function MapEditor() {
 
       alert("Mapa criado com sucesso!");
       setNewName("");
-      setNewLocation("");
-      setNewFloor("");
       setSelectedFile(null);
       fetchMaps();
     } catch (err) {
@@ -162,36 +157,14 @@ export default function MapEditor() {
 
           <form onSubmit={handleUpload} className="flex flex-col gap-5">
             <div>
-              <label className={labelClasses}>Instituição:</label>
+              <label className={labelClasses}>Nome do mapa:</label>
               <input
                 type="text"
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
-                placeholder="Selecione o nome da instituição..."
+                placeholder="Digite o nome do mapa..."
                 className={inputClasses}
                 required
-              />
-            </div>
-
-            <div>
-              <label className={labelClasses}>Local da instituição:</label>
-              <input
-                type="text"
-                value={newLocation}
-                onChange={(e) => setNewLocation(e.target.value)}
-                placeholder="Digite o nome do local..."
-                className={inputClasses}
-              />
-            </div>
-
-            <div>
-              <label className={labelClasses}>Pavimento:</label>
-              <input
-                type="text"
-                value={newFloor}
-                onChange={(e) => setNewFloor(e.target.value)}
-                placeholder="Digite qual o pavimento..."
-                className={inputClasses}
               />
             </div>
 

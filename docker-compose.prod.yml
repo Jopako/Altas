@@ -5,11 +5,13 @@ services:
       dockerfile: Dockerfile
     ports:
       - "3000:3000"
+    volumes:
+      - ./backend/uploads:/app/uploads
     env_file:
       - .env
     environment:
       PORT: 3000
-      FRONTEND_URL: http://localhost:5173
+      FRONTEND_URL: http://localhost
       JWT_SECRET: dev-secret
   frontend:
     build:
