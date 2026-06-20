@@ -80,9 +80,10 @@ O projeto pode ser executado em dois modos:
 
 ### Modo Desenvolvimento
 
+### Modo Desenvolvimento
 1. **Configuração de Variáveis de Ambiente**:
    Crie um arquivo `.env` na raiz do projeto baseado no `.env.example` (ou mantenha as variáveis locais ativas). Exemplo de estrutura:
-   ```env
+```env
    PORT=3000
    FRONTEND_URL=http://localhost:5173
    JWT_SECRET=dev-secret
@@ -90,7 +91,8 @@ O projeto pode ser executado em dois modos:
    GOOGLE_CLIENT_SECRET=seu_client_secret
    MS_CLIENT_ID=seu_ms_client_id
    MS_CLIENT_SECRET=seu_ms_client_secret
-   ```
+   MONGO_URI=sua_string_de_conexao_mongodb
+```
 
 2. **Subir os Contêineres**:
    Execute o comando abaixo no terminal da raiz do projeto para compilar e iniciar tanto o frontend quanto o backend em segundo plano:
