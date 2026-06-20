@@ -7,7 +7,8 @@ import authRoutes   from './routes/auth.routes.js';
 import mapsRoutes   from './routes/maps.routes.js';
 import healthRoutes from './routes/health.routes.js';
 import { connectDB } from "./config/database.js";
-
+import swaggerUi from 'swagger-ui-express';
+import { swaggerSpec } from './docs/swagger.js';
 
 dotenv.config();
 
@@ -21,6 +22,13 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 app.use(cors());
 app.use(express.json());
+
+app.use(
+  '/api-docs',
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerSpec)
+);
+
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 
