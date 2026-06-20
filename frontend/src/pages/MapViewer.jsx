@@ -9,12 +9,24 @@ import {
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { PageLayout, PageHeader, PageFooter, useTheme } from '../components/PageLayout';
-import { AuthBackground } from '../components/AuthBackground';
 
 const bounds = [
   [0, 0],
   [1000, 1000]
 ];
+
+const shellOuterClasses = (theme) =>
+  theme === 'dark'
+    ? 'bg-[radial-gradient(circle_at_top,rgba(74,127,212,0.14),transparent_42%),linear-gradient(180deg,#071427_0%,#0b1830_55%,#071427_100%)] text-white'
+    : 'bg-transparent text-[#1B2F55]';
+
+const panelClasses = (theme) =>
+  theme === 'dark'
+    ? 'bg-[#0b1830]/85 border-white/10 shadow-[0_18px_50px_rgba(0,0,0,0.24)] backdrop-blur-xl'
+    : 'bg-[#f1f6fb] border-[#1B2F55]/10 shadow-[0_16px_40px_rgba(27,47,85,0.08)] backdrop-blur-xl';
+
+const actionButtonClasses =
+  'inline-flex items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-all duration-200 hover:-translate-y-0.5';
 
 function decodeToken(token) {
   try {
@@ -142,7 +154,7 @@ export default function MapViewer() {
 
   if (loading) {
     return (
-      <PageLayout theme={theme} background={<AuthBackground theme={theme} />}>
+      <PageLayout theme={theme}>
         <PageHeader theme={theme} setTheme={setTheme} isLoggedIn />
         <main className="relative z-10 flex-1 flex items-center justify-center">
           <p className={`text-lg font-semibold ${theme === 'dark' ? 'text-white/70' : 'text-[#1B2F55]/70'}`}>
@@ -155,7 +167,7 @@ export default function MapViewer() {
 
   if (error) {
     return (
-      <PageLayout theme={theme} background={<AuthBackground theme={theme} />}>
+      <PageLayout theme={theme}>
         <PageHeader theme={theme} setTheme={setTheme} isLoggedIn />
         <main className="relative z-10 flex-1 flex flex-col items-center justify-center gap-4">
           <p className="text-red-400 text-lg font-semibold">Ops! {error}</p>
@@ -173,7 +185,7 @@ export default function MapViewer() {
   // TELA 1: Se o ID estiver ausente na URL, mostra a galeria de mapas
   if (!id) {
     return (
-      <PageLayout theme={theme} background={<AuthBackground theme={theme} />}>
+      <PageLayout theme={theme}>
         <PageHeader theme={theme} setTheme={setTheme} isLoggedIn />
 
         <main className="relative z-10 flex-1 px-6 sm:px-10 lg:px-16 pb-8">
@@ -262,124 +274,116 @@ export default function MapViewer() {
   // TELA 2: Se houver ID na URL, abre o mapa em tela cheia com seus pontos (GeoJSON)
   if (id && mapData) {
     return (
-      <div style={{ position: 'relative', height: '100vh', width: '100%', background: '#c4c4c4ff' }}>
-        
-        {/* Botão flutuante para voltar à galeria */}
+      <div className={`relative min-h-[100svh] overflow-hidden ${shellOuterClasses(theme)}`}>
+        <div className="absolute inset-0 pointer-events-none opacity-70">
+          <div className={`absolute -top-20 left-1/2 h-72 w-72 -translate-x-1/2 rounded-full blur-3xl ${
+            theme === 'dark' ? 'bg-[#4A7FD4]/15' : 'bg-[#93c5fd]/30'
+          }`} />
+        </div>
+
         <button 
           onClick={() => navigate('/map-viewer')}
-          style={{
-            position: 'absolute',
-            top: '15px',
-            left: '60px',
-            zIndex: 1000,
-            padding: '10px 16px',
-            background: 'rgba(17, 17, 34, 0.85)',
-            backdropFilter: 'blur(8px)',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-            borderRadius: '8px',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-            cursor: 'pointer',
-            fontWeight: 'bold',
-            color: '#e0e0f0',
-            transition: 'background-color 0.2s'
-          }}
-          onMouseOver={(e) => e.currentTarget.style.background = 'rgba(85, 119, 255, 0.2)'}
-          onMouseOut={(e) => e.currentTarget.style.background = 'rgba(17, 17, 34, 0.85)'}
+          className={`absolute left-4 top-4 z-20 ${actionButtonClasses} ${
+            theme === 'dark'
+              ? 'bg-white/10 text-white border border-white/10 hover:bg-white/15'
+              : 'bg-white/90 text-[#1B2F55] border border-[#1B2F55]/10 hover:bg-white'
+          }`}
         >
           ⬅ Voltar para a Galeria
         </button>
 
-        {/* Banner de informações da Planta com o Nome do Admin Criador */}
-        <div style={{
-          position: 'absolute',
-          top: '15px',
-          right: '20px',
-          zIndex: 1000,
-          padding: '10px 20px',
-          background: 'rgba(17, 17, 34, 0.85)',
-          backdropFilter: 'blur(8px)',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
-          borderRadius: '8px',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-          color: '#e0e0f0',
-          fontFamily: "'Inter', sans-serif",
-          fontSize: '13px'
-        }}>
-          <strong>Planta:</strong> {mapData.name} <span style={{ margin: '0 8px', color: 'rgba(255, 255, 255, 0.15)' }}>|</span> <strong>Criado por:</strong> <span style={{ color: '#5577ff', fontWeight: 'bold' }}>{mapData.creatorName || 'Administrador'}</span>
+        <div className={`absolute right-4 top-4 z-20 max-w-[calc(100vw-2rem)] rounded-2xl border px-4 py-3 text-xs sm:text-sm ${panelClasses(theme)}`}>
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <span className="font-semibold">Planta:</span>
+            <span className="font-medium">{mapData.name}</span>
+            <span className={`hidden sm:inline ${theme === 'dark' ? 'text-white/20' : 'text-[#1B2F55]/20'}`}>|</span>
+            <span className="font-semibold">Criado por:</span>
+            <span className={theme === 'dark' ? 'text-blue-300 font-semibold' : 'text-[#3F64A6] font-semibold'}>
+              {mapData.creatorName || 'Administrador'}
+            </span>
+          </div>
         </div>
 
-        <MapContainer
-          crs={L.CRS.Simple}
-          bounds={bounds}
-          style={{
-            height: '100%',
-            width: '100%'
-          }}
-        >
-          <ImageOverlay
-            url={`http://localhost:3000${mapData?.imageUrl}`}
-            bounds={bounds}
-          />
+        <div className="relative mx-auto flex min-h-[100svh] w-full max-w-[1600px] items-center justify-center px-3 pb-3 pt-24 sm:px-6 sm:pt-24 lg:px-10 lg:pb-8">
+          <div className={`w-full overflow-hidden rounded-[28px] border ${panelClasses(theme)}`}>
+            <div className="flex min-h-[calc(100svh-7rem)] flex-col">
+            <MapContainer
+              crs={L.CRS.Simple}
+              bounds={bounds}
+              className="flex-1"
+              style={{
+                height: '100%',
+                width: '100%',
+                background: theme === 'dark' ? '#071427' : '#edf3f9'
+              }}
+            >
+                <ImageOverlay
+                  url={`http://localhost:3000${mapData?.imageUrl}`}
+                  bounds={bounds}
+                />
 
-          <GeoJSON
-            key={id} 
-            data={mapData?.features}
-            onEachFeature={(feature, layer) => {
-              const props = feature.properties || {};
-              const poiId = props.id || props.name || Math.random().toString(36).substr(2, 9);
-              const name = props.name || 'Sem nome';
-              const desc = props.description || 'Sem descrição';
-              const photoHtml = props.photoUrl 
-                ? `<img src="http://localhost:3000${props.photoUrl}" style="width: 100%; max-height: 150px; object-fit: cover; border-radius: 6px; margin-top: 8px; display: block;" />`
-                : '';
+                <GeoJSON
+                  key={id}
+                  data={mapData?.features}
+                  onEachFeature={(feature, layer) => {
+                    const props = feature.properties || {};
+                    const poiId = props.id || props.name || Math.random().toString(36).substr(2, 9);
+                    const name = props.name || 'Sem nome';
+                    const desc = props.description || 'Sem descrição';
+                    const photoHtml = props.photoUrl
+                      ? `<img src="http://localhost:3000${props.photoUrl}" style="width: 100%; max-height: 150px; object-fit: cover; border-radius: 10px; margin-top: 8px; display: block;" />`
+                      : '';
 
-              const favoriteButtonHtml = isAdmin
-                ? ''
-                : `<button id="btn-fav-${poiId}" style="margin-top:10px; width:100%; padding:6px; background:#ff9900; color:#fff; border:none; border-radius:4px; font-weight:bold; cursor:pointer; font-size:12px; display:flex; align-items:center; justify-content:center; gap:4px; transition: background 0.2s;">☆ Favoritar</button>`;
+                    const favoriteButtonHtml = isAdmin
+                      ? ''
+                      : `<button id="btn-fav-${poiId}" style="margin-top:10px; width:100%; padding:8px 10px; background:#4A7FD4; color:#fff; border:none; border-radius:999px; font-weight:600; cursor:pointer; font-size:12px; display:flex; align-items:center; justify-content:center; gap:4px;">☆ Favoritar</button>`;
 
-              layer.bindPopup(`
-                <div style="font-family: 'Inter', sans-serif; min-width: 180px; color: #fff;">
-                  <h3 style="margin: 0 0 6px 0; color: #5577ff; font-size: 15px; font-weight: 700;">${name}</h3>
-                  <p style="margin: 0 0 8px 0; color: #888899; font-size: 12px; line-height: 1.4;">${desc}</p>
-                  ${photoHtml}
-                  ${favoriteButtonHtml}
-                </div>
-              `);
+                    layer.bindPopup(`
+                      <div style="font-family: Inter, sans-serif; min-width: 190px; color: #0b1b3b;">
+                        <h3 style="margin: 0 0 6px 0; color: #1B2F55; font-size: 15px; font-weight: 700;">${name}</h3>
+                        <p style="margin: 0 0 8px 0; color: #5b6b86; font-size: 12px; line-height: 1.45;">${desc}</p>
+                        ${photoHtml}
+                        ${favoriteButtonHtml}
+                      </div>
+                    `);
 
-              if (!isAdmin) {
-                layer.on('popupopen', () => {
-                  setTimeout(() => {
-                    const btn = document.getElementById(`btn-fav-${poiId}`);
-                    if (!btn) return;
+                    if (!isAdmin) {
+                      layer.on('popupopen', () => {
+                        setTimeout(() => {
+                          const btn = document.getElementById(`btn-fav-${poiId}`);
+                          if (!btn) return;
 
-                    const key = `${id}:${poiId}`;
-                    const renderFavoriteState = (favList) => {
-                      const isFav = favList.includes(key);
-                      btn.innerHTML = isFav ? '⭐ Remover Favorito' : '☆ Favoritar';
-                      btn.style.background = isFav ? 'rgba(255, 0, 0, 0.6)' : '#ff9900';
-                    };
+                          const key = `${id}:${poiId}`;
+                          const renderFavoriteState = (favList) => {
+                            const isFav = favList.includes(key);
+                            btn.innerHTML = isFav ? '⭐ Remover Favorito' : '☆ Favoritar';
+                            btn.style.background = isFav ? '#dc2626' : '#4A7FD4';
+                          };
 
-                    renderFavoriteState(favoritesRef.current);
-                    btn.onclick = async (event) => {
-                      event.preventDefault();
-                      event.stopPropagation();
-                      btn.disabled = true;
-                      const nextFavorites = await toggleFavorite(poiId);
-                      if (nextFavorites) renderFavoriteState(nextFavorites);
-                      btn.disabled = false;
-                    };
-                  }, 50);
-                });
-              }
-            }}
-          />
-        </MapContainer>
+                          renderFavoriteState(favoritesRef.current);
+                          btn.onclick = async (event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            btn.disabled = true;
+                            const nextFavorites = await toggleFavorite(poiId);
+                            if (nextFavorites) renderFavoriteState(nextFavorites);
+                            btn.disabled = false;
+                          };
+                        }, 50);
+                      });
+                    }
+                  }}
+                />
+              </MapContainer>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <PageLayout theme={theme} background={<AuthBackground theme={theme} />}>
+    <PageLayout theme={theme}>
       <PageHeader theme={theme} setTheme={setTheme} isLoggedIn />
       <main className="relative z-10 flex-1 flex items-center justify-center">
         <p className={`text-lg font-semibold ${theme === 'dark' ? 'text-white/70' : 'text-[#1B2F55]/70'}`}>

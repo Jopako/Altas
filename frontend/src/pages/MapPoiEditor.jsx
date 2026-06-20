@@ -25,7 +25,6 @@ if (typeof L !== 'undefined' && L.Draw && L.Draw.Polyline) {
 }
 
 import { PageLayout, PageHeader, PageFooter, useTheme } from '../components/PageLayout';
-import { AuthBackground } from '../components/AuthBackground';
 
 const bounds = [
   [0, 0],
@@ -61,6 +60,16 @@ const selectedShapeOptions = {
   fillColor: '#ffcc00',
   fillOpacity: 0.28
 };
+
+const shellOuterClasses = (theme) =>
+  theme === 'dark'
+    ? 'bg-[radial-gradient(circle_at_top,rgba(74,127,212,0.14),transparent_42%),linear-gradient(180deg,#071427_0%,#0b1830_55%,#071427_100%)] text-white'
+    : 'bg-transparent text-[#1B2F55]';
+
+const panelClasses = (theme) =>
+  theme === 'dark'
+    ? 'bg-[#0b1830]/85 border-white/10 shadow-[0_18px_50px_rgba(0,0,0,0.24)] backdrop-blur-xl'
+    : 'bg-[#f1f6fb] border-[#1B2F55]/10 shadow-[0_16px_40px_rgba(27,47,85,0.08)] backdrop-blur-xl';
 
 function getLayerKind(layer) {
   return layer instanceof L.Marker ? 'point' : 'area';
@@ -490,7 +499,7 @@ export default function MapPoiEditor() {
 
   if (loading) {
     return (
-      <PageLayout theme={theme} background={<AuthBackground theme={theme} />}>
+      <PageLayout theme={theme}>
         <PageHeader theme={theme} setTheme={setTheme} isLoggedIn />
         <main className="relative z-10 flex-1 flex items-center justify-center">
           <p className={`text-lg font-semibold ${theme === 'dark' ? 'text-white/70' : 'text-[#1B2F55]/70'}`}>
@@ -503,7 +512,7 @@ export default function MapPoiEditor() {
 
   if (error) {
     return (
-      <PageLayout theme={theme} background={<AuthBackground theme={theme} />}>
+      <PageLayout theme={theme}>
         <PageHeader theme={theme} setTheme={setTheme} isLoggedIn />
         <main className="relative z-10 flex-1 flex flex-col items-center justify-center gap-4">
           <p className="text-red-400 text-lg font-semibold">Ops! {error}</p>
@@ -520,12 +529,13 @@ export default function MapPoiEditor() {
 
   // TELA: EDITOR DO LEAFLET — Layout lado a lado dentro do PageLayout
   return (
-    <PageLayout theme={theme} background={<AuthBackground theme={theme} />} bottomBar={false} showFooter={false}>
+    <PageLayout theme={theme} bottomBar={false} showFooter={false}>
       <PageHeader theme={theme} setTheme={setTheme} isLoggedIn />
 
-      <main className="relative z-10 flex-1 flex flex-col lg:flex-row overflow-hidden" style={{ minHeight: 0 }}>
+      <main className={`relative z-10 flex-1 overflow-hidden ${shellOuterClasses(theme)}`}>
+        <div className="mx-auto flex min-h-[100svh] w-full max-w-[1600px] flex-col gap-4 px-3 pb-3 pt-4 sm:px-6 lg:flex-row lg:px-10 lg:pt-6">
         {/* Lado esquerdo - Formulário POI */}
-        <div className="w-full lg:w-[400px] flex-shrink-0 overflow-y-auto px-6 sm:px-10 py-6 flex flex-col relative z-20">
+        <div className={`w-full lg:w-[400px] flex-shrink-0 overflow-y-auto px-5 sm:px-6 py-6 flex flex-col relative z-20 rounded-[28px] border ${panelClasses(theme)}`}>
           {/* Info do usuário */}
           <div className="mb-4 flex items-center justify-between">
             <div>
@@ -539,7 +549,7 @@ export default function MapPoiEditor() {
             <button
               type="button"
               onClick={() => navigate('/map-editor')}
-              className={`text-xs px-3 py-1.5 rounded-lg cursor-pointer transition-colors font-semibold ${
+              className={`text-xs px-3 py-1.5 rounded-full cursor-pointer transition-all hover:-translate-y-0.5 font-semibold ${
                 theme === 'dark'
                   ? 'text-white/70 hover:text-white bg-white/10 hover:bg-white/15'
                   : 'text-[#1B2F55]/70 hover:text-[#1B2F55] bg-[#1B2F55]/10 hover:bg-[#1B2F55]/15'
@@ -600,10 +610,10 @@ export default function MapPoiEditor() {
 
               <div className="flex flex-wrap gap-3 mt-2">
                 <label
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-semibold cursor-pointer transition-colors ${
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-full text-xs font-semibold cursor-pointer transition-all hover:-translate-y-0.5 ${
                     theme === 'dark'
-                      ? 'bg-[#2563EB] hover:bg-[#1d4ed8] text-white'
-                      : 'bg-[#3F64A6] hover:bg-[#2F5EA8] text-white'
+                      ? 'bg-[#4A7FD4] hover:bg-[#3f6fba] text-white'
+                      : 'bg-[#4A7FD4] hover:bg-[#3f6fba] text-white'
                   }`}
                 >
                   <input
@@ -623,7 +633,7 @@ export default function MapPoiEditor() {
 
               <button
                 onClick={applyPoiChanges}
-                className="flex items-center justify-center gap-2 w-full px-5 py-2.5 bg-[#F59E0B] text-[#0B1B3B] rounded-lg text-sm font-semibold hover:bg-[#d97706] transition-colors cursor-pointer mt-1"
+                className="flex items-center justify-center gap-2 w-full px-5 py-2.5 bg-[#F59E0B] text-[#0B1B3B] rounded-full text-sm font-semibold hover:bg-[#d97706] transition-all hover:-translate-y-0.5 cursor-pointer mt-1"
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
@@ -635,10 +645,10 @@ export default function MapPoiEditor() {
 
               <button
                 onClick={clearPoiForm}
-                className={`text-xs px-3 py-2 rounded-lg cursor-pointer transition-colors ${
+                className={`text-xs px-3 py-2 rounded-full cursor-pointer transition-all hover:-translate-y-0.5 ${
                   theme === 'dark'
-                    ? 'text-white/50 hover:text-white/80 bg-white/5 hover:bg-white/10'
-                    : 'text-[#1B2F55]/50 hover:text-[#1B2F55]/80 bg-[#1B2F55]/5 hover:bg-[#1B2F55]/10'
+                    ? 'text-white/60 hover:text-white bg-white/5 hover:bg-white/10'
+                    : 'text-[#1B2F55]/60 hover:text-[#1B2F55] bg-[#1B2F55]/5 hover:bg-[#1B2F55]/10'
                 }`}
               >
                 Cancelar
@@ -665,7 +675,7 @@ export default function MapPoiEditor() {
                       key={tool.key}
                       type="button"
                       onClick={() => selectMappingTool(tool.key)}
-                      className={`px-3 py-2 rounded-lg text-xs font-semibold cursor-pointer transition-all ${
+                      className={`px-3 py-2 rounded-full text-xs font-semibold cursor-pointer transition-all ${
                         activeTool === tool.key
                           ? 'bg-[#F59E0B] text-[#0B1B3B] shadow-md'
                           : theme === 'dark'
@@ -685,14 +695,14 @@ export default function MapPoiEditor() {
                     <button
                       type="button"
                       onClick={finishPolygonDraft}
-                      className="px-3 py-2 rounded-lg text-xs font-semibold cursor-pointer transition-all bg-[#F59E0B] text-[#0B1B3B] shadow-md"
+                      className="px-3 py-2 rounded-full text-xs font-semibold cursor-pointer transition-all bg-[#F59E0B] text-[#0B1B3B] shadow-md hover:-translate-y-0.5"
                     >
                       Finalizar área
                     </button>
                     <button
                       type="button"
                       onClick={() => setDrawingPoints([])}
-                      className={`px-3 py-2 rounded-lg text-xs font-semibold cursor-pointer transition-all ${
+                      className={`px-3 py-2 rounded-full text-xs font-semibold cursor-pointer transition-all ${
                         theme === 'dark'
                           ? 'bg-white/10 text-white/70 hover:bg-white/15'
                           : 'bg-[#1B2F55]/10 text-[#1B2F55]/70 hover:bg-[#1B2F55]/15'
@@ -706,7 +716,7 @@ export default function MapPoiEditor() {
                   type="button"
                   onClick={saveFeatures}
                   disabled={savingMap}
-                  className="flex items-center justify-center gap-2 w-full px-5 py-2.5 bg-[#F59E0B] text-[#0B1B3B] rounded-lg text-sm font-semibold hover:bg-[#d97706] transition-colors cursor-pointer mt-auto"
+                  className="flex items-center justify-center gap-2 w-full px-5 py-2.5 bg-[#F59E0B] text-[#0B1B3B] rounded-full text-sm font-semibold hover:bg-[#d97706] transition-all hover:-translate-y-0.5 cursor-pointer mt-auto"
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
@@ -721,8 +731,8 @@ export default function MapPoiEditor() {
         </div>
 
         {/* Lado direito - Mapa Leaflet */}
-        <div className="flex-1 relative min-h-[400px] lg:min-h-0">
-          <div className={`absolute inset-2 rounded-2xl overflow-hidden shadow-xl border ${
+        <div className="flex-1 relative min-h-[420px] lg:min-h-0">
+          <div className={`absolute inset-0 rounded-[28px] overflow-hidden border ${
             theme === 'dark' ? 'border-white/10' : 'border-[#1B2F55]/15'
           }`}>
             <MapContainer
@@ -732,7 +742,12 @@ export default function MapPoiEditor() {
               maxBoundsViscosity={0.8}
               tap={false}
               doubleClickZoom={false}
-              style={{ height: '100%', width: '100%' }}
+              className="h-full w-full"
+              style={{
+                height: '100%',
+                width: '100%',
+                background: theme === 'dark' ? '#071427' : '#edf3f9'
+              }}
             >
               <ImageOverlay
                 url={`http://localhost:3000${mapData?.imageUrl}`}
@@ -761,6 +776,7 @@ export default function MapPoiEditor() {
               />
             </MapContainer>
           </div>
+        </div>
         </div>
       </main>
 
