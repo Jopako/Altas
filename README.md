@@ -143,6 +143,14 @@ O ambiente de produção usa o Nginx como servidor estático do frontend. O arqu
 Isso permite publicar o frontend e a API no mesmo host sem depender de CORS entre origens diferentes.
 
 ## Documentação da API
+### Swegger
+```bash
+npm install swagger-ui-express swagger-jsdoc
+```
+
+- Para abrir o Swagger no navegador: [http://localhost:3000/api-docs](http://localhost:3000/api-docs)
+
+## Exemplos:
 ### Registrar usuário
   
 POST /auth/register
@@ -171,4 +179,4 @@ GET /auth/favorites
 
 ## Documentação: 
   - Acesso ao [Plano de Projeto](https://github.com/Jopako/Altas/wiki).
-  - <a href="Modelo Projeto Interdisciplinar.pdf" class="image fit"> PDF </a>
+  - Acesso ao <a href="Modelo Projeto Interdisciplinar.pdf" class="image fit"> Artigo </a>.
