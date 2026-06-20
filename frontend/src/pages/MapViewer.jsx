@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import {
   MapContainer,
@@ -44,6 +44,7 @@ function decodeToken(token) {
 
 export default function MapViewer() {
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [theme, setTheme] = useTheme();
   
@@ -53,10 +54,15 @@ export default function MapViewer() {
   const [error, setError] = useState(null);
   const [favorites, setFavorites] = useState([]);
   const favoritesRef = useRef([]);
+  const poiToFocusRef = useRef(null);
 
   useEffect(() => {
     favoritesRef.current = favorites;
   }, [favorites]);
+
+  useEffect(() => {
+    poiToFocusRef.current = searchParams.get('poi');
+  }, [searchParams]);
 
   // Verificação de token
   useEffect(() => {
@@ -346,6 +352,12 @@ export default function MapViewer() {
                         ${favoriteButtonHtml}
                       </div>
                     `);
+
+                    if (poiToFocusRef.current && poiToFocusRef.current === poiId) {
+                      setTimeout(() => {
+                        layer.openPopup();
+                      }, 100);
+                    }
 
                     if (!isAdmin) {
                       layer.on('popupopen', () => {

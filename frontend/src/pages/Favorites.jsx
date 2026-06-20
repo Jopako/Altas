@@ -113,6 +113,10 @@ export default function Favorites() {
     }
   }
 
+  function openFavorite(item) {
+    navigate(`/map-viewer/${item.mapId}?poi=${encodeURIComponent(item.poiId)}`);
+  }
+
   if (loading) {
     return (
       <PageLayout theme={theme} background={<AuthBackground theme={theme} />}>
@@ -173,11 +177,12 @@ export default function Favorites() {
               {favoritePOIs.map((item) => (
                 <div
                   key={`${item.mapId}-${item.poiId}`}
+                  onClick={() => openFavorite(item)}
                   className={`flex gap-4 p-3 rounded-xl transition-all duration-200 hover:shadow-md ${
                     theme === 'dark'
                       ? 'bg-[#0f2346]/80 border border-white/10 hover:border-blue-400/30'
                       : 'bg-white/80 border border-[#1B2F55]/10 hover:border-[#4A7FD4]/30'
-                  }`}
+                  } cursor-pointer`}
                 >
                   {/* Thumbnail */}
                   <div className={`w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden ${
@@ -199,6 +204,9 @@ export default function Favorites() {
                   {/* Info */}
                   <div className="flex-1 min-w-0">
                     <p className={`text-[10px] mb-0.5 ${theme === 'dark' ? 'text-white/40' : 'text-[#1B2F55]/40'}`}>
+                      <span className="font-bold">Mapa:</span> {item.mapName}
+                    </p>
+                    <p className={`text-[10px] mb-0.5 ${theme === 'dark' ? 'text-white/40' : 'text-[#1B2F55]/40'}`}>
                       <span className="font-bold">Instituição:</span> {item.institutionName}
                     </p>
                     <p className={`text-[10px] mb-0.5 ${theme === 'dark' ? 'text-white/40' : 'text-[#1B2F55]/40'}`}>
@@ -211,7 +219,10 @@ export default function Favorites() {
 
                   {/* Botão favorito */}
                   <button
-                    onClick={() => handleRemoveFavorite(item.mapId, item.poiId)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRemoveFavorite(item.mapId, item.poiId);
+                    }}
                     className="flex-shrink-0 self-center text-red-400 hover:text-red-300 transition-colors cursor-pointer"
                     title="Remover dos favoritos"
                   >
