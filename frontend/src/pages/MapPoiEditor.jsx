@@ -6,6 +6,24 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "leaflet-draw/dist/leaflet.draw.css";
 import "leaflet-draw";
+
+// Patch Leaflet.Draw to prevent duplicate events on touch/hybrid screens
+if (typeof L !== 'undefined' && L.Draw && L.Draw.Polyline) {
+  const originalOnMouseDown = L.Draw.Polyline.prototype._onMouseDown;
+  L.Draw.Polyline.prototype._onMouseDown = function(e) {
+    if (this._lastTouchTime && (Date.now() - this._lastTouchTime < 600)) {
+      return;
+    }
+    originalOnMouseDown.call(this, e);
+  };
+
+  const originalOnTouch = L.Draw.Polyline.prototype._onTouch;
+  L.Draw.Polyline.prototype._onTouch = function(e) {
+    this._lastTouchTime = Date.now();
+    originalOnTouch.call(this, e);
+  };
+}
+
 import { PageLayout, PageHeader, PageFooter, useTheme } from '../components/PageLayout';
 import { AuthBackground } from '../components/AuthBackground';
 
@@ -60,8 +78,71 @@ function applySelectedLayerStyle(layer) {
   }
 }
 
-function MapSetup({ activeTool, featureGroupRef, selectedLayerRef, selectLayerHandlerRef, setActiveTool }) {
+function MapSetup({
+  activeTool,
+  featureGroupRef,
+  selectedLayerRef,
+  selectLayerHandlerRef,
+  setActiveTool,
+  drawingPoints,
+  setDrawingPoints,
+  finishPolygonDraft,
+}) {
   const map = useMap();
+  const tempPolygonRef = useRef(null);
+  const tempMarkersRef = useRef([]);
+
+  function clearTempPolygon() {
+    if (tempPolygonRef.current) {
+      map.removeLayer(tempPolygonRef.current);
+      tempPolygonRef.current = null;
+    }
+    tempMarkersRef.current.forEach((marker) => map.removeLayer(marker));
+    tempMarkersRef.current = [];
+  }
+
+  function renderTempMarkers(points) {
+    tempMarkersRef.current.forEach((marker) => map.removeLayer(marker));
+    tempMarkersRef.current = points.map((point, index) =>
+      L.marker(point, {
+        interactive: false,
+        keyboard: false,
+        icon: L.divIcon({
+          className: '',
+          html: `
+            <div style="
+              width: 18px;
+              height: 18px;
+              border-radius: 999px;
+              border: 2px solid #ffffff;
+              background: #0ea5e9;
+              box-shadow: 0 2px 10px rgba(0,0,0,0.35);
+              display: grid;
+              place-items: center;
+              color: white;
+              font-size: 10px;
+              font-weight: 700;
+              line-height: 1;
+            ">${index + 1}</div>
+          `,
+          iconSize: [18, 18],
+          iconAnchor: [9, 9],
+        }),
+      }).addTo(map)
+    );
+  }
+
+  function renderTempPolygon(points) {
+    clearTempPolygon();
+    if (points.length < 2) return;
+    renderTempMarkers(points);
+    tempPolygonRef.current = L.polygon(points, {
+      ...areaShapeOptions,
+      fillOpacity: 0.12,
+      dashArray: '6 8',
+      interactive: false,
+    }).addTo(map);
+  }
 
   useEffect(() => {
     if (!map || !featureGroupRef.current) return;
@@ -133,7 +214,6 @@ function MapSetup({ activeTool, featureGroupRef, selectedLayerRef, selectLayerHa
     if (!map || !featureGroupRef.current) return;
 
     const imageBounds = L.latLngBounds(bounds);
-    let drawHandler = null;
 
     map.getContainer().style.cursor = activeTool === 'select' ? '' : 'crosshair';
 
@@ -150,26 +230,42 @@ function MapSetup({ activeTool, featureGroupRef, selectedLayerRef, selectLayerHa
     }
 
     if (activeTool === 'polygon') {
-      drawHandler = new L.Draw.Polygon(map, {
-        allowIntersection: false,
-        showArea: true,
-        shapeOptions: areaShapeOptions,
-        drawError: {
-          color: '#ff6b6b',
-          message: 'As linhas da área não podem se cruzar.'
-        }
-      });
-      drawHandler.enable();
+      const onPolygonClick = (event) => {
+        if (!imageBounds.contains(event.latlng)) return;
+        setDrawingPoints((prev) => [...prev, event.latlng]);
+      };
+
+      const onPolygonDoubleClick = () => {
+        finishPolygonDraft();
+      };
+
+      map.on('click', onPolygonClick);
+      map.on('dblclick', onPolygonDoubleClick);
+
+      return () => {
+        map.off('click', onPolygonClick);
+        map.off('dblclick', onPolygonDoubleClick);
+        clearTempPolygon();
+      };
     }
 
     return () => {
       map.off('click', createPointOnClick);
       map.getContainer().style.cursor = '';
-      if (drawHandler) {
-        drawHandler.disable();
-      }
     };
-  }, [activeTool, featureGroupRef, map]);
+  }, [activeTool, featureGroupRef, finishPolygonDraft, map, setDrawingPoints]);
+
+  useEffect(() => {
+    if (activeTool !== 'polygon') return;
+    renderTempPolygon(drawingPoints);
+  }, [activeTool, drawingPoints, map]);
+
+  useEffect(() => {
+    if (activeTool !== 'polygon') {
+      clearTempPolygon();
+      setDrawingPoints([]);
+    }
+  }, [activeTool, setDrawingPoints]);
 
   return null;
 }
@@ -188,14 +284,21 @@ export default function MapPoiEditor() {
   const [selectedLayerKey, setSelectedLayerKey] = useState(null);
   const [selectedLayerKind, setSelectedLayerKind] = useState(null);
   const [activeTool, setActiveTool] = useState('select');
+  const [drawingPoints, setDrawingPoints] = useState([]);
+  const drawingPointsRef = useRef([]);
   const [poiName, setPoiName] = useState("");
   const [poiDescription, setPoiDescription] = useState("");
   const [poiPhotoUrl, setPoiPhotoUrl] = useState("");
   const [uploadingPoiPhoto, setUploadingPoiPhoto] = useState(false);
+  const [savingMap, setSavingMap] = useState(false);
   
   const featureGroupRef = useRef();
   const selectedLayerRef = useRef(null);
   const selectLayerHandlerRef = useRef(() => {});
+
+  useEffect(() => {
+    drawingPointsRef.current = drawingPoints;
+  }, [drawingPoints]);
 
   // Verificação de acesso Admin
   useEffect(() => {
@@ -222,25 +325,28 @@ export default function MapPoiEditor() {
 
   useEffect(() => {
     if (id) {
-      async function loadMap() {
-        try {
-          setLoading(true);
-          const res = await axios.get(`http://localhost:3000/api/maps/${id}`);
-          setMapData(res.data);
-          setError(null);
-        } catch (err) {
-          console.error("Erro ao carregar o mapa:", err);
-          setError("Não foi possível carregar este mapa.");
-        } finally {
-          setLoading(false);
-        }
-      }
       loadMap();
     }
   }, [id]);
 
+  async function loadMap() {
+    try {
+      setLoading(true);
+      const res = await axios.get(`http://localhost:3000/api/maps/${id}`);
+      setMapData(res.data);
+      setError(null);
+    } catch (err) {
+      console.error("Erro ao carregar o mapa:", err);
+      setError("Não foi possível carregar este mapa.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   async function saveFeatures() {
     try {
+      if (!featureGroupRef.current) return;
+      setSavingMap(true);
       const layers = featureGroupRef.current.toGeoJSON();
       const token = localStorage.getItem('jwt_token');
 
@@ -252,10 +358,13 @@ export default function MapPoiEditor() {
         }
       );
 
+      await loadMap();
       alert('Mapa salvo com sucesso!');
     } catch (error) {
       console.error("Erro ao salvar:", error);
       alert('Erro ao salvar. Verifique se você está logado como Admin.');
+    } finally {
+      setSavingMap(false);
     }
   }
 
@@ -327,13 +436,46 @@ export default function MapPoiEditor() {
 
   function selectMappingTool(tool) {
     clearPoiForm();
+    if (tool !== 'polygon') {
+      setDrawingPoints([]);
+    }
     setActiveTool(tool);
+  }
+
+  function finishPolygonDraft() {
+    const points = drawingPointsRef.current;
+    if (!featureGroupRef.current || points.length < 3) return;
+
+    const polygon = L.polygon(points, areaShapeOptions);
+    const poiId = `poi-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+    polygon.feature = {
+      type: 'Feature',
+      properties: {
+        id: poiId,
+        kind: 'area',
+        name: '',
+        description: '',
+        photoUrl: ''
+      }
+    };
+
+    featureGroupRef.current.addLayer(polygon);
+    polygon.on('click', (event) => {
+      if (event.originalEvent) {
+        L.DomEvent.stopPropagation(event.originalEvent);
+      }
+      selectLayer(polygon);
+    });
+    selectLayer(polygon);
+    setDrawingPoints([]);
+    setActiveTool('select');
   }
 
   const activeToolHint = {
     select: 'Selecione uma área ou ponto já criado para editar.',
     point: 'Ponto específico: clique uma vez no local exato da planta.',
-    polygon: 'Selecionar local: clique nos cantos da área seguindo as linhas da planta e finalize clicando no primeiro ponto.'
+    polygon: 'Selecionar local: clique quantos pontos forem necessários para contornar a área e finalize com duplo clique. Use este modo para áreas livres ou formas irregulares.'
   }[activeTool];
 
   const inputClasses = `w-full px-4 py-3 rounded-xl text-sm outline-none transition-colors ${
@@ -383,15 +525,28 @@ export default function MapPoiEditor() {
 
       <main className="relative z-10 flex-1 flex flex-col lg:flex-row overflow-hidden" style={{ minHeight: 0 }}>
         {/* Lado esquerdo - Formulário POI */}
-        <div className={`w-full lg:w-[400px] flex-shrink-0 overflow-y-auto px-6 sm:px-10 py-6 flex flex-col`}>
+        <div className="w-full lg:w-[400px] flex-shrink-0 overflow-y-auto px-6 sm:px-10 py-6 flex flex-col relative z-20">
           {/* Info do usuário */}
-          <div className="mb-4">
-            <p className={`text-sm font-bold ${theme === 'dark' ? 'text-white' : 'text-[#1B2F55]'}`}>
-              {user?.name || user?.email || 'Administrador'}
-            </p>
-            <p className={`text-xs ${theme === 'dark' ? 'text-white/60' : 'text-[#1B2F55]/60'}`}>
-              Perfil: Administrador
-            </p>
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <p className={`text-sm font-bold ${theme === 'dark' ? 'text-white' : 'text-[#1B2F55]'}`}>
+                {user?.name || user?.email || 'Administrador'}
+              </p>
+              <p className={`text-xs ${theme === 'dark' ? 'text-white/60' : 'text-[#1B2F55]/60'}`}>
+                Perfil: Administrador
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => navigate('/map-editor')}
+              className={`text-xs px-3 py-1.5 rounded-lg cursor-pointer transition-colors font-semibold ${
+                theme === 'dark'
+                  ? 'text-white/70 hover:text-white bg-white/10 hover:bg-white/15'
+                  : 'text-[#1B2F55]/70 hover:text-[#1B2F55] bg-[#1B2F55]/10 hover:bg-[#1B2F55]/15'
+              }`}
+            >
+              ⬅ Voltar
+            </button>
           </div>
 
           <h2 className={`text-xl font-extrabold mb-5 ${theme === 'dark' ? 'text-white' : 'text-[#1B2F55]'}`}>
@@ -464,22 +619,6 @@ export default function MapPoiEditor() {
                   </svg>
                   Fazer upload de imagem
                 </label>
-
-                <button
-                  type="button"
-                  onClick={() => selectMappingTool(activeTool === 'point' ? 'select' : 'point')}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-semibold cursor-pointer transition-colors ${
-                    theme === 'dark'
-                      ? 'bg-[#2563EB] hover:bg-[#1d4ed8] text-white'
-                      : 'bg-[#3F64A6] hover:bg-[#2F5EA8] text-white'
-                  }`}
-                >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="12" cy="10" r="3"/>
-                    <path d="M12 21.7C17.3 17 20 13 20 10a8 8 0 1 0-16 0c0 3 2.7 7 8 11.7z"/>
-                  </svg>
-                  Adicionar ponto no mapa
-                </button>
               </div>
 
               <button
@@ -541,31 +680,42 @@ export default function MapPoiEditor() {
                 <p className={`text-xs leading-relaxed ${theme === 'dark' ? 'text-white/40' : 'text-[#1B2F55]/40'}`}>
                   {activeToolHint}
                 </p>
+                {activeTool === 'polygon' && drawingPoints.length >= 2 && (
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={finishPolygonDraft}
+                      className="px-3 py-2 rounded-lg text-xs font-semibold cursor-pointer transition-all bg-[#F59E0B] text-[#0B1B3B] shadow-md"
+                    >
+                      Finalizar área
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDrawingPoints([])}
+                      className={`px-3 py-2 rounded-lg text-xs font-semibold cursor-pointer transition-all ${
+                        theme === 'dark'
+                          ? 'bg-white/10 text-white/70 hover:bg-white/15'
+                          : 'bg-[#1B2F55]/10 text-[#1B2F55]/70 hover:bg-[#1B2F55]/15'
+                      }`}
+                      >
+                      Limpar pontos
+                    </button>
+                  </div>
+                )}
+                <button
+                  type="button"
+                  onClick={saveFeatures}
+                  disabled={savingMap}
+                  className="flex items-center justify-center gap-2 w-full px-5 py-2.5 bg-[#F59E0B] text-[#0B1B3B] rounded-lg text-sm font-semibold hover:bg-[#d97706] transition-colors cursor-pointer mt-auto"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                    <polyline points="17 21 17 13 7 13 7 21"/>
+                    <polyline points="7 3 7 8 15 8"/>
+                  </svg>
+                  {savingMap ? 'Salvando...' : '💾 Salvar Alterações no Mapa'}
+                </button>
               </div>
-
-              {/* Botão salvar geral */}
-              <button
-                onClick={saveFeatures}
-                className="flex items-center justify-center gap-2 w-full px-5 py-2.5 bg-[#F59E0B] text-[#0B1B3B] rounded-lg text-sm font-semibold hover:bg-[#d97706] transition-colors cursor-pointer mt-auto"
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
-                  <polyline points="17 21 17 13 7 13 7 21"/>
-                  <polyline points="7 3 7 8 15 8"/>
-                </svg>
-                💾 Salvar Alterações no Mapa
-              </button>
-
-              <button
-                onClick={() => navigate('/map-editor')}
-                className={`text-xs px-3 py-2 rounded-lg cursor-pointer transition-colors ${
-                  theme === 'dark'
-                    ? 'text-white/50 hover:text-white/80 bg-white/5 hover:bg-white/10'
-                    : 'text-[#1B2F55]/50 hover:text-[#1B2F55]/80 bg-[#1B2F55]/5 hover:bg-[#1B2F55]/10'
-                }`}
-              >
-                ⬅ Voltar para lista de mapas
-              </button>
             </div>
           )}
         </div>
@@ -580,6 +730,8 @@ export default function MapPoiEditor() {
               bounds={bounds}
               maxBounds={bounds}
               maxBoundsViscosity={0.8}
+              tap={false}
+              doubleClickZoom={false}
               style={{ height: '100%', width: '100%' }}
             >
               <ImageOverlay
@@ -603,6 +755,9 @@ export default function MapPoiEditor() {
                 selectedLayerRef={selectedLayerRef}
                 selectLayerHandlerRef={selectLayerHandlerRef}
                 setActiveTool={setActiveTool}
+                drawingPoints={drawingPoints}
+                setDrawingPoints={setDrawingPoints}
+                finishPolygonDraft={finishPolygonDraft}
               />
             </MapContainer>
           </div>

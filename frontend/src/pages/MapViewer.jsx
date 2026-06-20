@@ -198,7 +198,7 @@ export default function MapViewer() {
                   onClick={() => navigate('/map-editor')}
                   className="flex items-center gap-2 px-4 py-2 bg-[#F59E0B] text-[#0B1B3B] text-sm font-semibold rounded-lg hover:bg-[#d97706] transition-colors cursor-pointer"
                 >
-                  <span className="text-lg leading-none">+</span> Novo mapa
+                  Novo mapa/Ponto de interesse
                 </button>
               ) : (
                 <button

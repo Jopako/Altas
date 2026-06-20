@@ -66,6 +66,9 @@ export function PageLayout({
 export function PageHeader({ theme, setTheme, actions, isLoggedIn = false }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const token = typeof window !== "undefined"
+    ? window.localStorage.getItem("jwt_token")
+    : null;
 
   return (
     <header className="relative z-10 grid grid-cols-[1fr_auto_1fr] items-center px-6 sm:px-10 lg:px-16 py-5">
@@ -122,15 +125,32 @@ export function PageHeader({ theme, setTheme, actions, isLoggedIn = false }) {
           Mapeamento institucional
         </p>
 
-        {!isLoggedIn && location.pathname !== "/login" && location.pathname !== "/Login" ? (
+        {isLoggedIn ? (
           <button
             type="button"
-            onClick={() => navigate("/login")}
-            className="rounded-full bg-[#F59E0B] px-4 py-2 text-[12px] font-semibold text-[#0B1B3B] transition-colors hover:bg-[#d97706]"
+            onClick={() => {
+              localStorage.removeItem('jwt_token');
+              navigate('/login');
+            }}
+            className={`rounded-full px-4 py-2 text-[12px] font-semibold border transition-colors cursor-pointer ${
+              theme === 'dark'
+                ? 'bg-[#3F64A6]/20 border-[#3F64A6]/40 text-blue-300 hover:bg-[#3F64A6]/35'
+                : 'bg-[#3F64A6]/10 border-[#3F64A6]/20 text-[#3F64A6] hover:bg-[#3F64A6]/20'
+            }`}
           >
-            Login
+            Sair
           </button>
-        ) : null}
+        ) : (
+          location.pathname !== "/login" && location.pathname !== "/Login" ? (
+            <button
+              type="button"
+              onClick={() => navigate(token ? "/map-viewer" : "/login")}
+              className="rounded-full bg-[#F59E0B] px-4 py-2 text-[12px] font-semibold text-[#0B1B3B] transition-colors hover:bg-[#d97706]"
+            >
+              Login
+            </button>
+          ) : null
+        )}
 
         <button
           className={`h-9 w-9 rounded-full grid place-items-center transition-colors cursor-pointer ${
