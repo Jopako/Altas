@@ -1,15 +1,25 @@
 import { Router } from 'express';
 import multer from 'multer';
 import path from 'node:path';
+import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { authMiddleware, adminMiddleware } from '../middleware/auth.middleware.js';
 import * as mapsCtrl from '../controllers/maps.controller.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const uploadDir = path.join(__dirname, '../uploads/images');
+
+// Cria a pasta de uploads na inicialização (cobre deploy novo)
+fs.mkdirSync(uploadDir, { recursive: true });
+
 const upload = multer({
   storage: multer.diskStorage({
-    destination: (_req, _file, cb) => cb(null, path.join(__dirname, '../uploads/images')),
-    filename:    (_req, file, cb) => cb(null, `${Date.now()}-${file.originalname}`),
+    destination: (_req, _file, cb) => {
+      // Garante que a pasta existe antes de gravar
+      fs.mkdirSync(uploadDir, { recursive: true });
+      cb(null, uploadDir);
+    },
+    filename: (_req, file, cb) => cb(null, `${Date.now()}-${file.originalname}`),
   }),
 });
 
@@ -21,7 +31,6 @@ const router = Router();
  *   name: Maps
  *   description: Gerenciamento de mapas
  */
-
 
 /**
  * @swagger
@@ -47,8 +56,7 @@ const router = Router();
  *       200:
  *         description: Upload realizado
  */
-
-router.post('/upload-image',     authMiddleware, adminMiddleware, upload.single('image'), mapsCtrl.uploadImage);
+router.post('/upload-image', authMiddleware, adminMiddleware, upload.single('image'), mapsCtrl.uploadImage);
 
 /**
  * @swagger
@@ -62,7 +70,6 @@ router.post('/upload-image',     authMiddleware, adminMiddleware, upload.single(
  *       200:
  *         description: Foto enviada
  */
-
 router.post('/upload-poi-photo', authMiddleware, adminMiddleware, upload.single('image'), mapsCtrl.uploadPoiPhoto);
 
 /**
@@ -75,8 +82,7 @@ router.post('/upload-poi-photo', authMiddleware, adminMiddleware, upload.single(
  *       200:
  *         description: Lista de mapas
  */
-
-router.get('/',                  mapsCtrl.listMaps);
+router.get('/', mapsCtrl.listMaps);
 
 /**
  * @swagger
@@ -94,8 +100,7 @@ router.get('/',                  mapsCtrl.listMaps);
  *       200:
  *         description: Mapa encontrado
  */
-
-router.get('/:id',               mapsCtrl.getMap);
+router.get('/:id', mapsCtrl.getMap);
 
 /**
  * @swagger
@@ -115,7 +120,6 @@ router.get('/:id',               mapsCtrl.getMap);
  *       200:
  *         description: Features salvas
  */
-
-router.put('/:id/features',      authMiddleware, adminMiddleware, mapsCtrl.saveFeatures);
+router.put('/:id/features', authMiddleware, adminMiddleware, mapsCtrl.saveFeatures);
 
 export default router;
