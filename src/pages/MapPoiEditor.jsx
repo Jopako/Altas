@@ -7,7 +7,7 @@ import "leaflet-draw/dist/leaflet.draw.css";
 import "leaflet-draw";
 
 import { PageLayout, PageHeader, PageFooter, useTheme } from '../components/PageLayout';
-import { lineStringToPolygon } from '../lib/graph'; // ← NOVO
+import { lineStringToPolygon } from '../lib/graph';
 
 const bounds = [
   [0, 0],
