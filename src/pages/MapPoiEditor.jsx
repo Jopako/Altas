@@ -92,7 +92,7 @@ export default function MapPoiEditor() {
     <PageLayout theme={theme} fullBleed>
       <PageHeader theme={theme} setTheme={setTheme} isLoggedIn />
 
-      {/* 👇 botão Voltar acima do mapa (com mais respiro no mobile) */}
+      {/*botão Voltar acima do mapa (com mais respiro no mobile) */}
       <div className="relative z-10 px-4 sm:px-10 pt-4 sm:pt-3 pb-4 sm:pb-4">
         <GhostButton
           theme={theme}
