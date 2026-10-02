@@ -1,1 +1,22 @@
   @import "tailwindcss";
+
+  /* Labels dos locais no mapa Leaflet */
+  .poi-label {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    font-size: calc(11px * var(--label-scale, 1)) !important;
+    font-weight: 700 !important;
+    color: #fff !important;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7), 0 0 2px rgba(0, 0, 0, 0.5) !important;
+    white-space: normal !important;
+    width: max-content !important;
+    max-width: 50px !important;
+    text-align: center !important;
+    pointer-events: none !important;
+    padding: 0 !important;
+  }
+
+  .poi-label::before {
+    display: none !important;
+  }

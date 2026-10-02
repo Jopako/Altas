@@ -7,8 +7,8 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* 1. Tela Inicial: Lista de Mapas e Upload */}
-        <Route path="/" element={<MapEditor />} />
+        {/* 1. Tela Inicial: Galeria de Mapas */}
+        <Route path="/" element={<MapViewer />} />
         <Route path="/map-editor" element={<MapEditor />} />
 
         {/* 2. Tela do Editor: Onde você desenha os pontos sobre a imagem */}
