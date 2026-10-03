@@ -20,6 +20,7 @@ import { PoiDetailPanel } from '../components/map/PoiDetailPanel';
 import { PoiCardList } from '../components/map/PoiCardList';
 import { RoutePanel } from '../components/map/RoutePanel';
 import { BackIcon, SettingsIcon } from '../components/icons/Icons';
+import { PoiExpandedModal } from '../components/map/PoiExpandedModal';
 
 export default function MapViewer() {
   const { id } = useParams();
@@ -37,6 +38,8 @@ export default function MapViewer() {
   const alvoAtivoRef = useRef('origem');
   const handlePoiClickRef = useRef(null);
   const poiLayersRef = useRef(new Map());
+
+  const [poiExpandido, setPoiExpandido] = useState(null);
 
   const { rotaPontos, rotaTexto, rotaErro, limparRota } = useIndoorRoute(
     mapData,
@@ -122,24 +125,27 @@ export default function MapViewer() {
   );
   const listaPois = [...areas, ...pontos].filter((f) => f.properties?.name);
 
-  function handleCardClick(poiFeature) {
-    const center = getFeatureCenter(poiFeature);
-    handlePoiClickRef.current?.({
-      id: poiFeature.properties?.id,
-      name: poiFeature.properties?.name,
-      lng: center?.lng,
-      lat: center?.lat,
-      feature: poiFeature,
-    });
-  }
+handleCardClick
+function handleCardClick(poiFeature) {
+  const center = getFeatureCenter(poiFeature);
+  handlePoiClickRef.current?.({
+    id: poiFeature.properties?.id,
+    name: poiFeature.properties?.name,
+    lng: center?.lng,
+    lat: center?.lat,
+    feature: poiFeature,
+  });
+  setPoiExpandido(poiFeature);
+}
 
-  function handleResetRoute() {
-    setNavOrigem(null);
-    setNavDestino(null);
-    limparRota();
-    setAlvoAtivo('origem');
-    setPoiSelecionado(null);
-  }
+function handleResetRoute() {
+  setNavOrigem(null);
+  setNavDestino(null);
+  limparRota();
+  setAlvoAtivo('origem');
+  setPoiSelecionado(null);
+  setPoiExpandido(null); 
+}
 
   return (
     <PageLayout theme={theme} fullBleed>
@@ -210,6 +216,15 @@ export default function MapViewer() {
           </div>
         }
       />
+      {poiExpandido && (
+        <PoiExpandedModal
+          theme={theme}
+          poi={poiExpandido}
+          onClose={() => setPoiExpandido(null)}
+          onOuvir={(poi) => alert('Aqui entraria a audiodescrição: ' + (poi.properties.name || '') + '. ' + (poi.properties.description || ''))}
+          onLibras={(poi) => alert('Aqui entraria o widget VLibras.')}
+        />
+      )}
     </PageLayout>
   );
 }

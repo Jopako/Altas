@@ -1,6 +1,6 @@
 /**
  * MapSplitLayout — Casca unificada de mapa + painel.
- * - Desktop (lg+): lado a lado (igual antes).
+ * - Desktop (lg+): lado a lado.
  * - Mobile (<lg): mapa em tela cheia + bottom sheet deslizável com o painel.
  */
 import { shellOuterClasses } from "../../lib/mapUi";
