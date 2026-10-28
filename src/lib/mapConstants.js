@@ -1,10 +1,39 @@
-/**
- * mapConstants — Constantes de coordenadas e estilos padrão de camadas Leaflet.
- */
+export const MAP_BOUNDS = [
+  [0, 0],
+  [1000, 800] 
+]; 
 
-export const MAP_BOUNDS = [[0, 0], [1000, 1000]];
+// Salas: Fundo cinza claro, borda um pouco mais escura (parece um card)
+export const DEFAULT_AREA_STYLE = {
+  color: '#64748B',       // Borda cinza
+  weight: 1,
+  fillColor: '#CBD5E1',   // Fundo cinza claro
+  fillOpacity: 1,         
+};
 
-export const ORIGEM_STYLE = { color: '#22c55e', weight: 3, fillColor: '#22c55e', fillOpacity: 0.35 };
-export const DESTINO_STYLE = { color: '#ef4444', weight: 3, fillColor: '#ef4444', fillOpacity: 0.35 };
-export const DEFAULT_AREA_STYLE = { color: '#00d4ff', weight: 2.5, fillColor: '#00d4ff', fillOpacity: 0.22 };
-export const DEFAULT_POINT_STYLE = { radius: 7, color: '#fff', weight: 2, fillColor: '#f59e0b', fillOpacity: 1 };
+// Pontos comuns
+export const DEFAULT_POINT_STYLE = {
+  radius: 6,
+  color: '#3B82F6',
+  weight: 2,
+  fillColor: '#FFFFFF',
+  fillOpacity: 1,
+};
+
+// Origem: Borda vermelha, miolo branco
+export const ORIGEM_STYLE = {
+  radius: 9,
+  color: '#EF4444',       
+  weight: 3,
+  fillColor: '#FFFFFF',   
+  fillOpacity: 1,
+};
+
+// Destino: Borda azul, miolo branco
+export const DESTINO_STYLE = {
+  radius: 9,
+  color: '#3B82F6',       
+  weight: 3,
+  fillColor: '#FFFFFF',   
+  fillOpacity: 1,
+};

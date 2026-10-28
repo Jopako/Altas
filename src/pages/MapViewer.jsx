@@ -1,5 +1,5 @@
 /**
- * MapViewer — Orquestração do visualizador de mapas e rotas acessíveis.
+ * MapViewer — Orquestração do visualizador de mapas e rotas.
  */
 import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -16,10 +16,9 @@ import { MapSplitLayout } from '../components/ui/MapSplitLayout';
 import { GhostButton } from '../components/ui/GhostButton';
 import { MapGallery } from '../components/map/MapGallery';
 import { ViewerMap } from '../components/map/ViewerMap';
-import { PoiDetailPanel } from '../components/map/PoiDetailPanel';
 import { PoiCardList } from '../components/map/PoiCardList';
 import { RoutePanel } from '../components/map/RoutePanel';
-import { BackIcon, SettingsIcon } from '../components/icons/Icons';
+import { BackIcon } from '../components/icons/Icons';
 import { PoiExpandedModal } from '../components/map/PoiExpandedModal';
 
 export default function MapViewer() {
@@ -33,7 +32,9 @@ export default function MapViewer() {
   const [navOrigem, setNavOrigem] = useState(null);
   const [navDestino, setNavDestino] = useState(null);
   const [alvoAtivo, setAlvoAtivo] = useState('origem');
-  const [somenteAcessivel, setSomenteAcessivel] = useState(false);
+  
+  
+  const [isRoutePanelOpen, setIsRoutePanelOpen] = useState(false);
 
   const alvoAtivoRef = useRef('origem');
   const handlePoiClickRef = useRef(null);
@@ -44,8 +45,7 @@ export default function MapViewer() {
   const { rotaPontos, rotaTexto, rotaErro, limparRota } = useIndoorRoute(
     mapData,
     navOrigem,
-    navDestino,
-    somenteAcessivel
+    navDestino
   );
 
   useEffect(() => {
@@ -59,6 +59,14 @@ export default function MapViewer() {
 
   useEffect(() => {
     handlePoiClickRef.current = (poi) => {
+      // Se o painel tiver fechado, só seleciona o POI e abre o modal (não mexe na rota)
+      if (!isRoutePanelOpen) {
+        setPoiSelecionado(poi.feature || null);
+        setPoiExpandido(poi.feature || null);
+        return;
+      }
+
+      // Lógica normal de traçar rota
       if (alvoAtivoRef.current === 'origem') {
         if (navDestino?.id === poi.id) setNavDestino(null);
         setNavOrigem(poi);
@@ -68,7 +76,7 @@ export default function MapViewer() {
       }
       setPoiSelecionado(poi.feature || null);
     };
-  }, [navOrigem, navDestino]);
+  }, [navOrigem, navDestino, isRoutePanelOpen]); // Adicionado isRoutePanelOpen nas dependências
 
   useEffect(() => {
     poiLayersRef.current.forEach((layer, key) => {
@@ -125,33 +133,35 @@ export default function MapViewer() {
   );
   const listaPois = [...areas, ...pontos].filter((f) => f.properties?.name);
 
-handleCardClick
-function handleCardClick(poiFeature) {
-  const center = getFeatureCenter(poiFeature);
-  handlePoiClickRef.current?.({
-    id: poiFeature.properties?.id,
-    name: poiFeature.properties?.name,
-    lng: center?.lng,
-    lat: center?.lat,
-    feature: poiFeature,
-  });
-  setPoiExpandido(poiFeature);
-}
+  function handleCardClick(poiFeature) {
+    const center = getFeatureCenter(poiFeature);
+    handlePoiClickRef.current?.({
+      id: poiFeature.properties?.id,
+      name: poiFeature.properties?.name,
+      lng: center?.lng,
+      lat: center?.lat,
+      feature: poiFeature,
+    });
+    
+      if (!isRoutePanelOpen) {
+        setPoiExpandido(poiFeature);
+      }
+  }
 
-function handleResetRoute() {
-  setNavOrigem(null);
-  setNavDestino(null);
-  limparRota();
-  setAlvoAtivo('origem');
-  setPoiSelecionado(null);
-  setPoiExpandido(null); 
-}
+  function handleResetRoute() {
+    setNavOrigem(null);
+    setNavDestino(null);
+    limparRota();
+    setAlvoAtivo('origem');
+    setPoiSelecionado(null);
+    setPoiExpandido(null);
+    // Não fechamos o painel aqui, só limpamos a rota (o painel controla seu próprio estado)
+  }
 
   return (
     <PageLayout theme={theme} fullBleed>
       <PageHeader theme={theme} setTheme={setTheme} />
 
-      {/* botão Voltar acima do mapa, fora do MapSplitLayout */}
       <div className="relative z-10 px-4 sm:px-10 pt-3 pb-5">
         <GhostButton
           theme={theme}
@@ -204,13 +214,13 @@ function handleResetRoute() {
                 setNavOrigem={setNavOrigem}
                 setNavDestino={setNavDestino}
                 setPoiSelecionado={setPoiSelecionado}
-                somenteAcessivel={somenteAcessivel}
-                setSomenteAcessivel={setSomenteAcessivel}
                 rotaPontos={rotaPontos}
                 rotaErro={rotaErro}
                 rotaTexto={rotaTexto}
                 onOuvirRota={() => alert('Aqui entraria a audiodescrição da rota: ' + (rotaTexto || ''))}
                 onLimpar={handleResetRoute}
+                isOpen={isRoutePanelOpen}          // 👈 Passando estado
+                setIsOpen={setIsRoutePanelOpen}    // 👈 Passando setter
               />
             )}
           </div>

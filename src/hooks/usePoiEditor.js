@@ -1,5 +1,5 @@
 /**
- * usePoiEditor — Hook de gerenciamento de estado e operações do editor de POIs/corredores.
+ * usePoiEditor — Hook de gerenciamento...
  */
 import { useState, useRef, useEffect } from "react";
 import L from "leaflet";
@@ -21,8 +21,10 @@ export function usePoiEditor(id, setMapData) {
 
   const [poiName, setPoiName] = useState("");
   const [poiTipo, setPoiTipo] = useState("sala");
-  const [poiDescription, setPoiDescription] = useState("");
-  const [poiPhotoUrl, setPoiPhotoUrl] = useState("");
+  
+  // 👇 O NOVO ESTADO: Uma lista de galeria (foto + descrição)
+  const [poiGallery, setPoiGallery] = useState([]); 
+  
   const [poiAcessivel, setPoiAcessivel] = useState(true);
   const [poiLargura, setPoiLargura] = useState(60);
   const [savingMap, setSavingMap] = useState(false);
@@ -51,7 +53,10 @@ export function usePoiEditor(id, setMapData) {
   function handlePoiPhotoUpload(file) {
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = () => setPoiPhotoUrl(reader.result);
+    reader.onload = () => {
+      // Adiciona uma nova entrada na galeria só com a foto (descrição vazia por enquanto)
+      setPoiGallery((prev) => [...prev, { photo: reader.result, description: '' }]);
+    };
     reader.readAsDataURL(file);
   }
 
@@ -63,11 +68,20 @@ export function usePoiEditor(id, setMapData) {
     applySelectedLayerStyle(layer);
     setSelectedLayerKey(layer.feature?.properties?.id || `layer-${L.stamp(layer)}`);
     setSelectedLayerKind(getLayerKind(layer));
+    
     const props = layer.feature?.properties || {};
     setPoiName(props.name || '');
     setPoiTipo(props.tipo || 'sala');
-    setPoiDescription(props.description || '');
-    setPoiPhotoUrl(props.photoUrl || '');
+    
+    // 👇 Carrega a galeria, com fallback pros campos antigos
+    if (Array.isArray(props.gallery)) {
+      setPoiGallery(props.gallery);
+    } else if (props.photoUrl || props.description) {
+      setPoiGallery([{ photo: props.photoUrl || '', description: props.description || '' }]);
+    } else {
+      setPoiGallery([]);
+    }
+    
     setPoiAcessivel(props.acessivel !== false);
     setPoiLargura(props.largura ?? 60);
   }
@@ -83,8 +97,7 @@ export function usePoiEditor(id, setMapData) {
     setSelectedLayerKind(null);
     setPoiName('');
     setPoiTipo('sala');
-    setPoiDescription('');
-    setPoiPhotoUrl('');
+    setPoiGallery([]); // Limpa a galeria
     setPoiAcessivel(true);
     setPoiLargura(60);
   }
@@ -94,6 +107,7 @@ export function usePoiEditor(id, setMapData) {
     if (!layer) return;
     const kind = getLayerKind(layer);
     const poiId = layer.feature?.properties?.id || `f-${Date.now()}`;
+    
     if (kind === 'edge') {
       layer.feature = {
         type: 'Feature',
@@ -112,8 +126,7 @@ export function usePoiEditor(id, setMapData) {
           kind,
           tipo: kind === 'area' ? poiTipo : undefined,
           name: poiName,
-          description: poiDescription,
-          photoUrl: poiPhotoUrl,
+          gallery: poiGallery, // Salva a lista unificada
           acessivel: poiAcessivel,
         },
       };
@@ -121,6 +134,8 @@ export function usePoiEditor(id, setMapData) {
     applyDefaultLayerStyle(layer);
     clearPoiForm();
   }
+
+  // ... funções selectMappingTool, finishPolygonDraft, finishPathDraft continuam iguais ...
 
   function selectMappingTool(tool) {
     clearPoiForm();
@@ -135,7 +150,7 @@ export function usePoiEditor(id, setMapData) {
     const poiId = `f-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     polygon.feature = {
       type: 'Feature',
-      properties: { id: poiId, kind: 'area', tipo: 'sala', name: '', description: '', photoUrl: '', acessivel: true },
+      properties: { id: poiId, kind: 'area', tipo: 'sala', name: '', gallery: [], acessivel: true },
     };
     featureGroupRef.current.addLayer(polygon);
     polygon.on('click', (e) => {
@@ -173,8 +188,9 @@ export function usePoiEditor(id, setMapData) {
 
   return {
     selectedLayerKey, selectedLayerKind, activeTool, setActiveTool, drawingPoints, setDrawingPoints,
-    poiName, setPoiName, poiTipo, setPoiTipo, poiDescription, setPoiDescription,
-    poiPhotoUrl, poiAcessivel, setPoiAcessivel, poiLargura, setPoiLargura, savingMap,
+    poiName, setPoiName, poiTipo, setPoiTipo, 
+    poiGallery, setPoiGallery, // Exporta a galeria unificada
+    poiAcessivel, setPoiAcessivel, poiLargura, setPoiLargura, savingMap,
     featureGroupRef, selectedLayerRef, selectLayerHandlerRef, selectLayer, clearPoiForm,
     applyPoiChanges, selectMappingTool, finishPolygonDraft, finishPathDraft,
     saveFeatures, handlePoiPhotoUpload,

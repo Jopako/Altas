@@ -1,7 +1,5 @@
 /**
- * PoiExpandedModal — Modal expandido de um POI.
- * Mostra nome, tipo, galeria de fotos (múltiplas) e descrição completa.
- * Fecha no X, no backdrop ou com ESC.
+ * PoiExpandedModal — Modal expandido de um POI com carrossel de fotos e descrições unificadas.
  */
 import { useEffect, useState } from 'react';
 import { AccentButton } from '../ui/AccentButton';
@@ -12,34 +10,46 @@ export function PoiExpandedModal({ theme, poi, onClose, onOuvir, onLibras }) {
   const isDark = theme === 'dark';
   const [imgIndex, setImgIndex] = useState(0);
 
-  // Reset do índice ao trocar de POI
+  if (!poi) return null;
+
+  const props = poi.properties || {};
+  
+  // 👇 Lê a galeria unificada (com fallback para os dados antigos)
+  const gallery = props.gallery?.length > 0 
+    ? props.gallery 
+    : (props.photoUrl ? [{ photo: props.photoUrl, description: props.description }] : []);
+
+  const hasPhotos = gallery.length > 0;
+  const kind = poi.geometry?.type === 'Polygon' ? 'Sala' : 'Ponto';
+
+  // Reseta o carrossel quando troca de POI
   useEffect(() => {
     setImgIndex(0);
   }, [poi?.properties?.id]);
 
-  // ESC fecha
+  // Fecha no ESC e navega com as setas do teclado
   useEffect(() => {
-    const onKey = (e) => e.key === 'Escape' && onClose();
+    const onKey = (e) => {
+      if (e.key === 'Escape') onClose();
+      if (hasPhotos) {
+        if (e.key === 'ArrowRight') setImgIndex((i) => (i + 1) % gallery.length);
+        if (e.key === 'ArrowLeft') setImgIndex((i) => (i - 1 + gallery.length) % gallery.length);
+      }
+    };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  }, [onClose, hasPhotos, gallery.length]);
 
-  // Trava o scroll do body enquanto aberto
+  // Trava o scroll do body
   useEffect(() => {
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = prev; };
   }, []);
 
-  if (!poi) return null;
-
-  const props = poi.properties || {};
-  const photos = [
-    ...(Array.isArray(props.photos) ? props.photos : []),
-    ...(props.photoUrl ? [props.photoUrl] : []),
-  ];
-  const hasPhotos = photos.length > 0;
-  const kind = poi.geometry?.type === 'Polygon' ? 'Sala' : 'Ponto';
+  // Navegação do carrossel
+  const nextImg = () => setImgIndex((i) => (i + 1) % gallery.length);
+  const prevImg = () => setImgIndex((i) => (i - 1 + gallery.length) % gallery.length);
 
   return (
     <div
@@ -49,10 +59,7 @@ export function PoiExpandedModal({ theme, poi, onClose, onOuvir, onLibras }) {
       aria-labelledby="poi-modal-title"
     >
       {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-        onClick={onClose}
-      />
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
       {/* Card */}
       <div
@@ -78,9 +85,7 @@ export function PoiExpandedModal({ theme, poi, onClose, onOuvir, onLibras }) {
             type="button"
             onClick={onClose}
             className={`shrink-0 w-9 h-9 rounded-full flex items-center justify-center transition-colors ${
-              isDark
-                ? 'bg-white/10 hover:bg-white/20 text-white'
-                : 'bg-[#1B2F55]/10 hover:bg-[#1B2F55]/20 text-[#1B2F55]'
+              isDark ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-[#1B2F55]/10 hover:bg-[#1B2F55]/20 text-[#1B2F55]'
             }`}
             aria-label="Fechar"
           >
@@ -90,44 +95,67 @@ export function PoiExpandedModal({ theme, poi, onClose, onOuvir, onLibras }) {
 
         {/* Conteúdo com scroll */}
         <div className="flex-1 min-h-0 overflow-y-auto">
-          {/* Galeria */}
+          
+          {/* CARROSSEL DE FOTOS */}
           {hasPhotos && (
-            <div className="px-5 sm:px-6 pt-4">
-              <div className={`w-full aspect-video rounded-xl overflow-hidden ${isDark ? 'bg-white/5' : 'bg-[#1B2F55]/5'}`}>
+            <div className="relative px-5 sm:px-6 pt-4 pb-2">
+              <div className={`w-full aspect-video rounded-xl overflow-hidden relative group ${isDark ? 'bg-[#071427]' : 'bg-[#edf3f9]'}`}>
                 <img
-                  src={photos[imgIndex]}
-                  alt={props.name || 'Local'}
-                  className="w-full h-full object-contain"
+                  src={gallery[imgIndex].photo}
+                  alt={`${props.name || 'Local'} - Foto ${imgIndex + 1}`}
+                  className="w-full h-full object-contain transition-opacity duration-300"
                 />
+                
+                {/* Setas (só aparece se tiver mais de 1 foto) */}
+                {gallery.length > 1 && (
+                  <>
+                    <button
+                      onClick={prevImg}
+                      className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors cursor-pointer"
+                      aria-label="Foto anterior"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={nextImg}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors cursor-pointer"
+                      aria-label="Próxima foto"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                  </>
+                )}
               </div>
 
-              {photos.length > 1 && (
-                <div className="flex gap-2 mt-3 overflow-x-auto pb-1">
-                  {photos.map((src, i) => (
+              {/* Bolinhas de navegação */}
+              {gallery.length > 1 && (
+                <div className="flex justify-center gap-1.5 mt-3">
+                  {gallery.map((_, i) => (
                     <button
                       key={i}
-                      type="button"
                       onClick={() => setImgIndex(i)}
-                      className={`shrink-0 w-14 h-14 rounded-lg overflow-hidden border-2 transition-all ${
+                      className={`w-2 h-2 rounded-full transition-all ${
                         i === imgIndex
-                          ? isDark ? 'border-[#4A7FD4]' : 'border-[#3F64A6]'
-                          : 'border-transparent opacity-60 hover:opacity-100'
+                          ? isDark ? 'bg-[#4A7FD4] w-4' : 'bg-[#3F64A6] w-4'
+                          : isDark ? 'bg-white/20 hover:bg-white/40' : 'bg-[#1B2F55]/20 hover:bg-[#1B2F55]/40'
                       }`}
-                      aria-label={`Foto ${i + 1}`}
-                    >
-                      <img src={src} alt="" className="w-full h-full object-cover" />
-                    </button>
+                      aria-label={`Ir para foto ${i + 1}`}
+                    />
                   ))}
                 </div>
               )}
             </div>
           )}
 
-          {/* Descrição */}
+          {/* DESCRIÇÃO (Muda conforme a foto selecionada) */}
           <div className="px-5 sm:px-6 py-5">
-            {props.description ? (
+            {hasPhotos && gallery[imgIndex]?.description ? (
               <p className={`text-sm sm:text-base leading-relaxed whitespace-pre-line ${isDark ? 'text-white/85' : 'text-[#1B2F55]/85'}`}>
-                {props.description}
+                {gallery[imgIndex].description}
               </p>
             ) : (
               <p className={`text-sm italic ${isDark ? 'text-white/40' : 'text-[#1B2F55]/40'}`}>
@@ -137,7 +165,7 @@ export function PoiExpandedModal({ theme, poi, onClose, onOuvir, onLibras }) {
           </div>
         </div>
 
-        {/* Footer com ações */}
+        {/* Footer com botões */}
         <div className={`px-5 sm:px-6 py-4 border-t flex flex-wrap gap-2 ${isDark ? 'border-white/10' : 'border-[#1B2F55]/10'}`}>
           <AccentButton onClick={() => onOuvir(poi)} size="sm" className="flex-1 min-w-[140px]">
             <SpeakIcon className="h-4 w-4 shrink-0" /> Ouvir descrição

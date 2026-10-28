@@ -1,6 +1,5 @@
 /**
  * MapPoiEditor — Orquestração do editor de pontos de interesse, áreas e corredores da planta.
- * Utiliza MapSplitLayout para responsividade mobile/desktop e persiste via mapsStorage.
  */
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -38,9 +37,12 @@ export default function MapPoiEditor() {
     setPoiName,
     poiTipo,
     setPoiTipo,
-    poiDescription,
-    setPoiDescription,
-    poiPhotoUrl,
+    poiPhotosList,
+    setPoiPhotosList,
+    poiDescriptionsList,
+    setPoiDescriptionsList,
+    poiGallery, 
+    setPoiGallery,
     poiAcessivel,
     setPoiAcessivel,
     poiLargura,
@@ -92,7 +94,6 @@ export default function MapPoiEditor() {
     <PageLayout theme={theme} fullBleed>
       <PageHeader theme={theme} setTheme={setTheme} isLoggedIn />
 
-      {/*botão Voltar acima do mapa (com mais respiro no mobile) */}
       <div className="relative z-10 px-4 sm:px-10 pt-4 sm:pt-3 pb-4 sm:pb-4">
         <GhostButton
           theme={theme}
@@ -109,10 +110,7 @@ export default function MapPoiEditor() {
         panelPosition="left"
         panelWidth="editor"
         panel={
-          <EditorSidebar
-            theme={theme}
-            mapName={mapData.name}
-          >
+          <EditorSidebar theme={theme} mapName={mapData.name}>
             {selectedLayerKey ? (
               selectedLayerKind === 'edge' ? (
                 <CorridorForm
@@ -132,13 +130,14 @@ export default function MapPoiEditor() {
                   setPoiName={setPoiName}
                   poiTipo={poiTipo}
                   setPoiTipo={setPoiTipo}
-                  poiDescription={poiDescription}
-                  setPoiDescription={setPoiDescription}
-                  poiPhotoUrl={poiPhotoUrl}
+                  poiGallery={poiGallery}
+                  setPoiGallery={setPoiGallery}
                   onPhotoUpload={handlePoiPhotoUpload}
                   onSave={applyPoiChanges}
                   onCancel={clearPoiForm}
                 />
+
+
               )
             ) : (
               <div className="flex-1 flex flex-col gap-4">
