@@ -30,7 +30,8 @@ dist-ssr
 *.sln
 *.sw?
 
-# Backend runtime data
-backend/users.json
-backend/plantasPredios/
-backend/uploads/
+ Backend runtime data
+server/users.json
+server/plantasPredios/
+server/uploads/
+server/generate-token.js

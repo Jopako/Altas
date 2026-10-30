@@ -12,6 +12,7 @@
   "dependencies": {
     "@heroicons/react": "^2.2.0",
     "@tailwindcss/vite": "^4.3.3",
+    "axios": "^1.21.0",
     "leaflet": "^1.9.4",
     "leaflet-draw": "^1.0.4",
     "react": "^19.2.8",

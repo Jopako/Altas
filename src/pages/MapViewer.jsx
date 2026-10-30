@@ -1,57 +1,73 @@
-/**
- * MapViewer — Orquestração do visualizador de mapas e rotas.
- */
 import { useEffect, useRef, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import L from "leaflet";
-import { useTheme } from '../hooks/useTheme';
-import { loadMaps, getMapById } from '../lib/mapsStorage';
-import { getFeatureCenter } from '../lib/geo';
+import { useTheme } from "../hooks/useTheme";
+import { loadPublicWorkspace, loadMyWorkspace } from "../lib/workspacesStorage";
+import { getFeatureCenter } from "../lib/geo";
+import { ORIGEM_STYLE, DESTINO_STYLE, DEFAULT_AREA_STYLE, DEFAULT_POINT_STYLE } from "../lib/mapConstants";
+import { useIndoorRoute } from "../hooks/useIndoorRoute";
 
-import { ORIGEM_STYLE, DESTINO_STYLE, DEFAULT_AREA_STYLE, DEFAULT_POINT_STYLE } from '../lib/mapConstants';
-import { useIndoorRoute } from '../hooks/useIndoorRoute';
-
-import { PageLayout, PageHeader } from '../components/PageLayout';
-import { MapSplitLayout } from '../components/ui/MapSplitLayout';
-import { GhostButton } from '../components/ui/GhostButton';
-import { MapGallery } from '../components/map/MapGallery';
-import { ViewerMap } from '../components/map/ViewerMap';
-import { PoiCardList } from '../components/map/PoiCardList';
-import { RoutePanel } from '../components/map/RoutePanel';
-import { BackIcon } from '../components/icons/Icons';
-import { PoiExpandedModal } from '../components/map/PoiExpandedModal';
+import { PageLayout, PageHeader } from "../components/PageLayout";
+import { MapSplitLayout } from "../components/ui/MapSplitLayout";
+import { GhostButton } from "../components/ui/GhostButton";
+import { ViewerMap } from "../components/map/ViewerMap";
+import { PoiCardList } from "../components/map/PoiCardList";
+import { RoutePanel } from "../components/map/RoutePanel";
+import { BackIcon } from "../components/icons/Icons";
+import { PoiExpandedModal } from "../components/map/PoiExpandedModal";
 
 export default function MapViewer() {
-  const { id } = useParams();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [theme, setTheme] = useTheme();
 
-  const [mapList, setMapList] = useState([]);
-  const [mapData, setMapData] = useState(null);
+  const blocoUrl = searchParams.get("bloco");
+  const [blocoAtivo, setBlocoAtivo] = useState(blocoUrl || null);
+
+  const [workspace, setWorkspace] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
   const [poiSelecionado, setPoiSelecionado] = useState(null);
   const [navOrigem, setNavOrigem] = useState(null);
   const [navDestino, setNavDestino] = useState(null);
-  const [alvoAtivo, setAlvoAtivo] = useState('origem');
-  
-  
+  const [alvoAtivo, setAlvoAtivo] = useState("origem");
   const [isRoutePanelOpen, setIsRoutePanelOpen] = useState(false);
 
-  const alvoAtivoRef = useRef('origem');
+  const alvoAtivoRef = useRef("origem");
   const handlePoiClickRef = useRef(null);
   const poiLayersRef = useRef(new Map());
 
   const [poiExpandido, setPoiExpandido] = useState(null);
 
   const { rotaPontos, rotaTexto, rotaErro, limparRota } = useIndoorRoute(
-    mapData,
+    workspace,
     navOrigem,
     navDestino
   );
 
   useEffect(() => {
-    if (id) setMapData(getMapById(id));
-    else setMapList(loadMaps());
-  }, [id]);
+    let cancelled = false;
+    async function load() {
+      try {
+        setLoading(true);
+        setError(null);
+        const hasToken = !!localStorage.getItem("jwt_token");
+        const ws = hasToken ? await loadMyWorkspace() : await loadPublicWorkspace();
+        if (!cancelled) setWorkspace(ws);
+      } catch (err) {
+        if (!cancelled) setError(err.response?.data?.error || "Erro ao carregar o workspace.");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    load();
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    setBlocoAtivo(blocoUrl || null);
+  }, [blocoUrl]);
 
   useEffect(() => {
     alvoAtivoRef.current = alvoAtivo;
@@ -59,15 +75,12 @@ export default function MapViewer() {
 
   useEffect(() => {
     handlePoiClickRef.current = (poi) => {
-      // Se o painel tiver fechado, só seleciona o POI e abre o modal (não mexe na rota)
       if (!isRoutePanelOpen) {
         setPoiSelecionado(poi.feature || null);
         setPoiExpandido(poi.feature || null);
         return;
       }
-
-      // Lógica normal de traçar rota
-      if (alvoAtivoRef.current === 'origem') {
+      if (alvoAtivoRef.current === "origem") {
         if (navDestino?.id === poi.id) setNavDestino(null);
         setNavOrigem(poi);
       } else {
@@ -76,7 +89,7 @@ export default function MapViewer() {
       }
       setPoiSelecionado(poi.feature || null);
     };
-  }, [navOrigem, navDestino, isRoutePanelOpen]); // Adicionado isRoutePanelOpen nas dependências
+  }, [navOrigem, navDestino, isRoutePanelOpen]);
 
   useEffect(() => {
     poiLayersRef.current.forEach((layer, key) => {
@@ -96,42 +109,14 @@ export default function MapViewer() {
     });
   }, [navOrigem, navDestino]);
 
-  // Galeria
-  if (!id) {
-    return (
-      <MapGallery
-        theme={theme}
-        setTheme={setTheme}
-        mapList={mapList}
-        onOpenMap={(mapId) => navigate(`/map-viewer/${mapId}`)}
-        onEditMaps={() => navigate('/map-editor')}
-      />
-    );
+  function handleBlocoClick(blockId) {
+    setBlocoAtivo(blockId);
+    if (blockId) {
+      navigate(`/map-viewer?bloco=${blockId}`, { replace: true });
+    } else {
+      navigate("/map-viewer", { replace: true });
+    }
   }
-
-  // Mapa não encontrado
-  if (!mapData) {
-    return (
-      <PageLayout theme={theme}>
-        <PageHeader theme={theme} setTheme={setTheme} />
-        <main className="relative z-10 flex-1 flex items-center justify-center p-6">
-          <p className={theme === 'dark' ? 'text-white/70' : 'text-[#1B2F55]/70'}>
-            Mapa não encontrado neste navegador.
-          </p>
-        </main>
-      </PageLayout>
-    );
-  }
-
-  const features = mapData.features?.features || [];
-  const areas = features.filter(
-    (f) => f.geometry?.type === 'Polygon' && !(f.properties?.kind === 'edge' || f.properties?.tipo === 'corredor')
-  );
-  const pontos = features.filter((f) => f.geometry?.type === 'Point');
-  const corredores = features.filter(
-    (f) => f.properties?.kind === 'edge' || f.properties?.tipo === 'corredor'
-  );
-  const listaPois = [...areas, ...pontos].filter((f) => f.properties?.name);
 
   function handleCardClick(poiFeature) {
     const center = getFeatureCenter(poiFeature);
@@ -142,34 +127,64 @@ export default function MapViewer() {
       lat: center?.lat,
       feature: poiFeature,
     });
-    
-      if (!isRoutePanelOpen) {
-        setPoiExpandido(poiFeature);
-      }
+    if (!isRoutePanelOpen) setPoiExpandido(poiFeature);
   }
 
   function handleResetRoute() {
     setNavOrigem(null);
     setNavDestino(null);
     limparRota();
-    setAlvoAtivo('origem');
+    setAlvoAtivo("origem");
     setPoiSelecionado(null);
     setPoiExpandido(null);
-    // Não fechamos o painel aqui, só limpamos a rota (o painel controla seu próprio estado)
   }
+
+  if (loading) return <div className="p-10 text-center text-white">Carregando workspace...</div>;
+  if (error) return <div className="p-10 text-center text-red-500">{error}</div>;
+  if (!workspace) return null;
+
+  const allFeatures = workspace.features?.features || [];
+  
+  const uniqueFeaturesMap = new Map();
+  allFeatures.forEach((f, index) => {
+    const id = f.properties?.id || `no-id-${index}`;
+    if (!uniqueFeaturesMap.has(id)) {
+      uniqueFeaturesMap.set(id, f);
+    }
+  });
+  const featuresUnicas = Array.from(uniqueFeaturesMap.values());
+
+  const featuresAtivas = blocoAtivo
+    ? featuresUnicas.filter((f) => f.properties?.blockId === blocoAtivo)
+    : featuresUnicas;
+
+  const areas = featuresAtivas.filter(
+    (f) => f.geometry?.type === "Polygon" && !(f.properties?.kind === "edge" || f.properties?.tipo === "corredor")
+  );
+  const pontos = featuresAtivas.filter((f) => f.geometry?.type === "Point");
+  const corredores = featuresAtivas.filter(
+    (f) => f.properties?.kind === "edge" || f.properties?.tipo === "corredor"
+  );
+  const listaPois = [...areas, ...pontos].filter((f) => f.properties?.name);
+
+  // 👇 Lista Geral para a Rota
+  const todasAreas = featuresUnicas.filter(
+    (f) => f.geometry?.type === "Polygon" && !(f.properties?.kind === "edge" || f.properties?.tipo === "corredor")
+  );
+  const todosPontos = featuresUnicas.filter((f) => f.geometry?.type === "Point");
+  const todosPoisParaRota = [...todasAreas, ...todosPontos].filter((f) => f.properties?.name);
 
   return (
     <PageLayout theme={theme} fullBleed>
       <PageHeader theme={theme} setTheme={setTheme} />
-
       <div className="relative z-10 px-4 sm:px-10 pt-3 pb-5">
-        <GhostButton
-          theme={theme}
-          variant="overlay"
-          size="sm"
-          onClick={() => navigate('/map-viewer')}
+        <GhostButton 
+          theme={theme} 
+          variant="overlay" 
+          size="sm" 
+          onClick={() => navigate("/map-gallery")} 
         >
-          <BackIcon className="h-4 w-4 shrink-0" /> Voltar
+          <BackIcon className="h-4 w-4 shrink-0" /> Voltar aos Blocos
         </GhostButton>
       </div>
 
@@ -181,6 +196,9 @@ export default function MapViewer() {
           <ViewerMap
             key={theme}
             theme={theme}
+            workspace={workspace}
+            blocoAtivo={blocoAtivo}
+            onBlocoClick={handleBlocoClick}
             corredores={corredores}
             areas={areas}
             pontos={pontos}
@@ -194,19 +212,33 @@ export default function MapViewer() {
         }
         panel={
           <div className="flex flex-col gap-4">
+            {blocoAtivo && (
+              <div className={`p-3 rounded-xl flex items-center justify-between text-sm font-bold shadow-sm ${
+                theme === "dark" ? "bg-[#4A7FD4]/20 text-white border border-[#4A7FD4]/30" : "bg-[#3F64A6]/10 text-[#1B2F55] border border-[#3F64A6]/20"
+              }`}>
+                <span className="truncate pr-2">📍 {workspace.blockMeta?.[blocoAtivo]?.name || blocoAtivo}</span>
+                <button
+                  onClick={() => handleBlocoClick(null)}
+                  className="text-[11px] underline opacity-70 hover:opacity-100 cursor-pointer whitespace-nowrap"
+                >
+                  Ver todos
+                </button>
+              </div>
+            )}
+
             <PoiCardList
               theme={theme}
               pois={listaPois}
               poiSelecionado={poiSelecionado}
               onSelectPoi={handleCardClick}
-              onOuvir={(poi) => alert('Aqui entraria a audiodescrição do local: ' + (poi.properties.name || '') + '. ' + (poi.properties.description || ''))}
-              onLibras={(poi) => alert('Aqui entraria o widget VLibras traduzindo este texto para Libras.')}
+              onOuvir={(poi) => alert("Audiodescrição: " + (poi.properties.description || ""))}
+              onLibras={(poi) => alert("Aqui entraria o VLibras.")}
             />
 
-            {listaPois.length >= 2 && (
+            {todosPoisParaRota.length >= 1 && (
               <RoutePanel
                 theme={theme}
-                listaPois={listaPois}
+                listaPois={todosPoisParaRota} // 👈 Lista geral, permite rotas entre blocos
                 alvoAtivo={alvoAtivo}
                 setAlvoAtivo={setAlvoAtivo}
                 navOrigem={navOrigem}
@@ -217,22 +249,23 @@ export default function MapViewer() {
                 rotaPontos={rotaPontos}
                 rotaErro={rotaErro}
                 rotaTexto={rotaTexto}
-                onOuvirRota={() => alert('Aqui entraria a audiodescrição da rota: ' + (rotaTexto || ''))}
+                onOuvirRota={() => alert("Audiodescrição da rota: " + (rotaTexto || ""))}
                 onLimpar={handleResetRoute}
-                isOpen={isRoutePanelOpen}          // 👈 Passando estado
-                setIsOpen={setIsRoutePanelOpen}    // 👈 Passando setter
+                isOpen={isRoutePanelOpen}
+                setIsOpen={setIsRoutePanelOpen}
               />
             )}
           </div>
         }
       />
+      
       {poiExpandido && (
         <PoiExpandedModal
           theme={theme}
           poi={poiExpandido}
           onClose={() => setPoiExpandido(null)}
-          onOuvir={(poi) => alert('Aqui entraria a audiodescrição: ' + (poi.properties.name || '') + '. ' + (poi.properties.description || ''))}
-          onLibras={(poi) => alert('Aqui entraria o widget VLibras.')}
+          onOuvir={(poi) => alert("Audiodescrição: " + (poi.properties.description || ""))}
+          onLibras={(poi) => alert("Aqui entraria o VLibras.")}
         />
       )}
     </PageLayout>

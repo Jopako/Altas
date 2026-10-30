@@ -28,3 +28,17 @@
 .leaflet-tooltip.poi-label::before {
   display: none;
 }
+
+.bloco-label {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  font-size: 24px !important;
+  font-weight: 900 !important;
+  color: #FFFFFF !important;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+  pointer-events: none;
+}
+.bloco-label::before {
+  display: none !important;
+}

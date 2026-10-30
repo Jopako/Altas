@@ -1,9 +1,6 @@
-/**
- * usePoiEditor — Hook de gerenciamento...
- */
 import { useState, useRef, useEffect } from "react";
 import L from "leaflet";
-import { updateMapFeatures } from "../lib/mapsStorage";
+import { loadMyWorkspace, saveMyWorkspace, uploadBlockImage } from "../lib/workspacesStorage";
 import {
   areaShapeOptions,
   pathShapeOptions,
@@ -12,19 +9,21 @@ import {
   applySelectedLayerStyle,
 } from "../components/map/editor/layerStyles";
 
-export function usePoiEditor(id, setMapData) {
+export function usePoiEditor(setMapData) {
+  const [workspace, setWorkspace] = useState(null);
+  const [loading, setLoading] = useState(true);
+
   const [selectedLayerKey, setSelectedLayerKey] = useState(null);
   const [selectedLayerKind, setSelectedLayerKind] = useState(null);
   const [activeTool, setActiveTool] = useState('select');
   const [drawingPoints, setDrawingPoints] = useState([]);
   const drawingPointsRef = useRef([]);
+  
+  const [selectedBlockId, setSelectedBlockId] = useState(null);
 
   const [poiName, setPoiName] = useState("");
   const [poiTipo, setPoiTipo] = useState("sala");
-  
-  // 👇 O NOVO ESTADO: Uma lista de galeria (foto + descrição)
-  const [poiGallery, setPoiGallery] = useState([]); 
-  
+  const [poiGallery, setPoiGallery] = useState([]);
   const [poiAcessivel, setPoiAcessivel] = useState(true);
   const [poiLargura, setPoiLargura] = useState(60);
   const [savingMap, setSavingMap] = useState(false);
@@ -34,30 +33,85 @@ export function usePoiEditor(id, setMapData) {
   const selectLayerHandlerRef = useRef(() => {});
 
   useEffect(() => {
+    async function load() {
+      try {
+        setLoading(true);
+        const ws = await loadMyWorkspace();
+        setWorkspace(ws);
+        if (setMapData) setMapData(ws);
+      } catch (err) {
+        console.error("Erro ao carregar workspace:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, [setMapData]);
+
+  useEffect(() => {
     drawingPointsRef.current = drawingPoints;
   }, [drawingPoints]);
 
-  function persistFeatures(featureCollection) {
-    const updated = updateMapFeatures(id, featureCollection);
-    if (updated && setMapData) setMapData(updated);
-  }
-
-  function saveFeatures() {
-    if (!featureGroupRef.current) return;
+  // Mistura as features do bloco atual com as dos outros
+  async function saveFeatures() {
+    if (!featureGroupRef.current || !workspace) return;
+    
     setSavingMap(true);
-    persistFeatures(featureGroupRef.current.toGeoJSON());
-    setSavingMap(false);
-    alert('Mapa salvo neste navegador!');
+
+    // 1. O que está na tela AGORA (só do bloco atual)
+    const currentFeatures = featureGroupRef.current.toGeoJSON().features;
+
+    // 2. Garante que o blockId foi salvo em todas
+    const featuresWithBlockId = currentFeatures.map(f => ({
+      ...f,
+      properties: { ...f.properties, blockId: selectedBlockId }
+    }));
+
+    // 3. Pega o que já existia no workspace dos OUTROS blocos
+    const allWorkspaceFeatures = workspace.features?.features || [];
+    const otherBlockFeatures = allWorkspaceFeatures.filter(
+      f => f.properties?.blockId !== selectedBlockId
+    );
+
+    // 4. Junta tudo e cria o payload
+    const mergedFeatures = {
+      type: 'FeatureCollection',
+      features: [...otherBlockFeatures, ...featuresWithBlockId]
+    };
+
+    const payload = {
+      name: workspace.name || "Workspace ALTAS",
+      features: mergedFeatures,
+      blockMeta: workspace.blockMeta || {},
+    };
+
+    try {
+      const updated = await saveMyWorkspace(payload);
+      setWorkspace((prev) => ({ ...prev, ...updated }));
+      if (setMapData) setMapData(updated);
+      alert('Workspace salvo com sucesso!');
+    } catch (err) {
+      console.error("Erro ao salvar workspace:", err);
+      alert('Erro ao salvar o workspace no servidor.');
+    } finally {
+      setSavingMap(false);
+    }
   }
 
-  function handlePoiPhotoUpload(file) {
+  async function handlePoiPhotoUpload(file) {
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      // Adiciona uma nova entrada na galeria só com a foto (descrição vazia por enquanto)
-      setPoiGallery((prev) => [...prev, { photo: reader.result, description: '' }]);
-    };
-    reader.readAsDataURL(file);
+    try {
+      const uploadRes = await uploadBlockImage(file);
+      const imageUrl = uploadRes.imageUrl || uploadRes.url;
+      
+      const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:3000';
+      const fullImageUrl = imageUrl.startsWith('http') ? imageUrl : `${API_BASE}${imageUrl}`;
+
+      setPoiGallery((prev) => [...prev, { photo: fullImageUrl, description: '' }]);
+    } catch (err) {
+      console.error("Erro ao fazer upload da foto do ponto:", err);
+      alert("Erro ao enviar a foto para o servidor.");
+    }
   }
 
   function selectLayer(layer) {
@@ -72,16 +126,7 @@ export function usePoiEditor(id, setMapData) {
     const props = layer.feature?.properties || {};
     setPoiName(props.name || '');
     setPoiTipo(props.tipo || 'sala');
-    
-    // 👇 Carrega a galeria, com fallback pros campos antigos
-    if (Array.isArray(props.gallery)) {
-      setPoiGallery(props.gallery);
-    } else if (props.photoUrl || props.description) {
-      setPoiGallery([{ photo: props.photoUrl || '', description: props.description || '' }]);
-    } else {
-      setPoiGallery([]);
-    }
-    
+    setPoiGallery(props.gallery || (props.photoUrl ? [{ photo: props.photoUrl, description: props.description || '' }] : []));
     setPoiAcessivel(props.acessivel !== false);
     setPoiLargura(props.largura ?? 60);
   }
@@ -97,7 +142,7 @@ export function usePoiEditor(id, setMapData) {
     setSelectedLayerKind(null);
     setPoiName('');
     setPoiTipo('sala');
-    setPoiGallery([]); // Limpa a galeria
+    setPoiGallery([]);
     setPoiAcessivel(true);
     setPoiLargura(60);
   }
@@ -115,7 +160,7 @@ export function usePoiEditor(id, setMapData) {
           type: 'LineString',
           coordinates: layer.getLatLngs().map((p) => [p.lng, p.lat]),
         },
-        properties: { id: poiId, kind: 'edge', acessivel: poiAcessivel, largura: poiLargura },
+        properties: { id: poiId, kind: 'edge', blockId: selectedBlockId, acessivel: poiAcessivel, largura: poiLargura },
       };
     } else {
       layer.feature = {
@@ -124,9 +169,10 @@ export function usePoiEditor(id, setMapData) {
           ...(layer.feature?.properties || {}),
           id: poiId,
           kind,
+          blockId: selectedBlockId,
           tipo: kind === 'area' ? poiTipo : undefined,
           name: poiName,
-          gallery: poiGallery, // Salva a lista unificada
+          gallery: poiGallery,
           acessivel: poiAcessivel,
         },
       };
@@ -134,8 +180,6 @@ export function usePoiEditor(id, setMapData) {
     applyDefaultLayerStyle(layer);
     clearPoiForm();
   }
-
-  // ... funções selectMappingTool, finishPolygonDraft, finishPathDraft continuam iguais ...
 
   function selectMappingTool(tool) {
     clearPoiForm();
@@ -145,12 +189,12 @@ export function usePoiEditor(id, setMapData) {
 
   function finishPolygonDraft() {
     const points = drawingPointsRef.current;
-    if (!featureGroupRef.current || points.length < 3) return;
+    if (!featureGroupRef.current || points.length < 3 || !selectedBlockId) return;
     const polygon = L.polygon(points, areaShapeOptions);
     const poiId = `f-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     polygon.feature = {
       type: 'Feature',
-      properties: { id: poiId, kind: 'area', tipo: 'sala', name: '', gallery: [], acessivel: true },
+      properties: { id: poiId, kind: 'area', blockId: selectedBlockId, tipo: 'sala', name: '', gallery: [], acessivel: true },
     };
     featureGroupRef.current.addLayer(polygon);
     polygon.on('click', (e) => {
@@ -164,7 +208,7 @@ export function usePoiEditor(id, setMapData) {
 
   function finishPathDraft() {
     const points = drawingPointsRef.current;
-    if (!featureGroupRef.current) return;
+    if (!featureGroupRef.current || !selectedBlockId) return;
     const cleaned = points.filter(
       (pt, i) => i === 0 || pt.lat !== points[i - 1].lat || pt.lng !== points[i - 1].lng
     );
@@ -174,7 +218,7 @@ export function usePoiEditor(id, setMapData) {
     polyline.feature = {
       type: 'Feature',
       geometry: { type: 'LineString', coordinates: cleaned.map((p) => [p.lng, p.lat]) },
-      properties: { id: edgeId, kind: 'edge', acessivel: true, largura: 60 },
+      properties: { id: edgeId, kind: 'edge', blockId: selectedBlockId, acessivel: true, largura: 60 },
     };
     featureGroupRef.current.addLayer(polyline);
     polyline.on('click', (e) => {
@@ -187,9 +231,9 @@ export function usePoiEditor(id, setMapData) {
   }
 
   return {
+    workspace, loading, selectedBlockId, setSelectedBlockId,
     selectedLayerKey, selectedLayerKind, activeTool, setActiveTool, drawingPoints, setDrawingPoints,
-    poiName, setPoiName, poiTipo, setPoiTipo, 
-    poiGallery, setPoiGallery, // Exporta a galeria unificada
+    poiName, setPoiName, poiTipo, setPoiTipo, poiGallery, setPoiGallery,
     poiAcessivel, setPoiAcessivel, poiLargura, setPoiLargura, savingMap,
     featureGroupRef, selectedLayerRef, selectLayerHandlerRef, selectLayer, clearPoiForm,
     applyPoiChanges, selectMappingTool, finishPolygonDraft, finishPathDraft,

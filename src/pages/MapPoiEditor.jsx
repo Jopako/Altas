@@ -1,10 +1,6 @@
-/**
- * MapPoiEditor — Orquestração do editor de pontos de interesse, áreas e corredores da planta.
- */
-import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { useTheme } from '../hooks/useTheme';
-import { getMapById } from '../lib/mapsStorage';
 import { usePoiEditor } from '../hooks/usePoiEditor';
 import { PageLayout, PageHeader } from '../components/PageLayout';
 import { MapSplitLayout } from '../components/ui/MapSplitLayout';
@@ -19,88 +15,44 @@ import { CorridorForm } from '../components/map/editor/CorridorForm';
 import { PoiForm } from '../components/map/editor/PoiForm';
 
 export default function MapPoiEditor() {
-  const { id } = useParams();
+  const { blockId } = useParams(); 
   const navigate = useNavigate();
   const [theme, setTheme] = useTheme();
-
   const [mapData, setMapData] = useState(null);
-  const [notFound, setNotFound] = useState(false);
 
   const {
-    selectedLayerKey,
-    selectedLayerKind,
-    activeTool,
-    setActiveTool,
-    drawingPoints,
-    setDrawingPoints,
-    poiName,
-    setPoiName,
-    poiTipo,
-    setPoiTipo,
-    poiPhotosList,
-    setPoiPhotosList,
-    poiDescriptionsList,
-    setPoiDescriptionsList,
-    poiGallery, 
-    setPoiGallery,
-    poiAcessivel,
-    setPoiAcessivel,
-    poiLargura,
-    setPoiLargura,
-    savingMap,
-    featureGroupRef,
-    selectedLayerRef,
-    selectLayerHandlerRef,
-    selectLayer,
-    clearPoiForm,
-    applyPoiChanges,
-    selectMappingTool,
-    finishPolygonDraft,
-    finishPathDraft,
-    saveFeatures,
-    handlePoiPhotoUpload,
-  } = usePoiEditor(id, setMapData);
+    workspace, loading, selectedBlockId, setSelectedBlockId,
+    selectedLayerKey, selectedLayerKind, activeTool, setActiveTool,
+    drawingPoints, setDrawingPoints, poiName, setPoiName, poiTipo, setPoiTipo,
+    poiGallery, setPoiGallery, poiAcessivel, setPoiAcessivel,
+    poiLargura, setPoiLargura, savingMap, featureGroupRef, selectedLayerRef,
+    selectLayerHandlerRef, selectLayer, clearPoiForm, applyPoiChanges,
+    selectMappingTool, finishPolygonDraft, finishPathDraft, saveFeatures, handlePoiPhotoUpload,
+  } = usePoiEditor(setMapData);
 
+  // 
   useEffect(() => {
-    if (!id) {
-      navigate('/map-editor');
-      return;
+    if (blockId && blockId !== selectedBlockId) {
+      setSelectedBlockId(blockId);
     }
-    const found = getMapById(id);
-    if (!found) {
-      setNotFound(true);
-      return;
-    }
-    setMapData(found);
-  }, [id, navigate]);
+  }, [blockId, selectedBlockId, setSelectedBlockId]);
 
-  if (!id) return null;
-  if (notFound) {
+  if (loading || !workspace) {
     return (
-      <PageLayout theme={theme}>
-        <PageHeader theme={theme} setTheme={setTheme} isLoggedIn />
-        <main className="relative z-10 flex-1 flex flex-col items-center justify-center gap-4 p-6">
-          <p className="text-red-400 text-lg font-semibold">Mapa não encontrado neste navegador.</p>
-          <GhostButton theme={theme} onClick={() => navigate('/map-editor')} size="md">
-            Voltar
-          </GhostButton>
-        </main>
-      </PageLayout>
+      <div className="min-h-screen flex items-center justify-center bg-[#0d203b] text-white">
+        <p>Carregando editor...</p>
+      </div>
     );
   }
-  if (!mapData) return null;
+
+  const blocksList = Object.entries(workspace.blockMeta || {});
 
   return (
     <PageLayout theme={theme} fullBleed>
-      <PageHeader theme={theme} setTheme={setTheme} isLoggedIn />
-
+      <PageHeader theme={theme} setTheme={setTheme} />
+      
       <div className="relative z-10 px-4 sm:px-10 pt-4 sm:pt-3 pb-4 sm:pb-4">
-        <GhostButton
-          theme={theme}
-          variant="overlay"
-          size="sm"
-          onClick={() => navigate('/map-editor')}
-        >
+        <GhostButton theme={theme} variant="overlay" size="sm" onClick={() => navigate("/map-editor")}>
           <BackIcon className="h-4 w-4 shrink-0" /> Voltar
         </GhostButton>
       </div>
@@ -110,8 +62,31 @@ export default function MapPoiEditor() {
         panelPosition="left"
         panelWidth="editor"
         panel={
-          <EditorSidebar theme={theme} mapName={mapData.name}>
-            {selectedLayerKey ? (
+          <EditorSidebar theme={theme} mapName={workspace.name || "Workspace"}>
+            {/* Seletor de Bloco Ativo */}
+            <div className="mb-4">
+              <label className="text-xs font-semibold mb-1 block text-white/70">Bloco em Edição:</label>
+              <select
+                value={selectedBlockId || ""}
+                onChange={(e) => {
+                  const newId = e.target.value || null;
+                  setSelectedBlockId(newId);
+                  // Atualiza a URL quando o usuário troca o bloco pelo select
+                  if (newId) navigate(`/map-editor/${newId}`);
+                  else navigate('/map-editor');
+                }}
+                className="w-full p-2 rounded-lg bg-black/20 text-white border border-white/10 text-sm outline-none"
+              >
+                <option value="">Selecione um bloco...</option>
+                {blocksList.map(([id, meta]) => (
+                  <option key={id} value={id}>{meta.name || id}</option>
+                ))}
+              </select>
+            </div>
+
+            {!selectedBlockId ? (
+              <p className="text-sm text-white/50 italic">Selecione um bloco acima para começar a editar.</p>
+            ) : selectedLayerKey ? (
               selectedLayerKind === 'edge' ? (
                 <CorridorForm
                   theme={theme}
@@ -136,19 +111,13 @@ export default function MapPoiEditor() {
                   onSave={applyPoiChanges}
                   onCancel={clearPoiForm}
                 />
-
-
               )
             ) : (
               <div className="flex-1 flex flex-col gap-4">
                 <p className={`text-sm ${theme === 'dark' ? 'text-white/50' : 'text-[#1B2F55]/50'}`}>
-                  Use as ferramentas abaixo para criar um ponto, uma área ou um corredor no mapa.
+                  Use as ferramentas abaixo para criar um ponto, uma área ou um corredor no bloco selecionado.
                 </p>
-                <ToolPicker
-                  theme={theme}
-                  activeTool={activeTool}
-                  onSelectTool={selectMappingTool}
-                />
+                <ToolPicker theme={theme} activeTool={activeTool} onSelectTool={selectMappingTool} />
                 <DraftActions
                   theme={theme}
                   activeTool={activeTool}
@@ -157,18 +126,8 @@ export default function MapPoiEditor() {
                   onFinishPath={finishPathDraft}
                   onClear={() => setDrawingPoints([])}
                 />
-                <AccentButton
-                  onClick={saveFeatures}
-                  disabled={savingMap}
-                  className="w-full mt-auto"
-                >
-                  {savingMap ? (
-                    'Salvando...'
-                  ) : (
-                    <>
-                      <SaveIcon className="h-4 w-4 shrink-0" /> Salvar mapa
-                    </>
-                  )}
+                <AccentButton onClick={saveFeatures} disabled={savingMap} className="w-full mt-auto">
+                  {savingMap ? 'Salvando...' : <><SaveIcon className="h-4 w-4 shrink-0" /> Salvar Workspace</>}
                 </AccentButton>
               </div>
             )}
@@ -177,8 +136,8 @@ export default function MapPoiEditor() {
         map={
           <EditorCanvas
             theme={theme}
-            mapData={mapData}
-            id={id}
+            mapData={workspace}
+            activeBlockId={selectedBlockId}
             activeTool={activeTool}
             featureGroupRef={featureGroupRef}
             selectedLayerRef={selectedLayerRef}

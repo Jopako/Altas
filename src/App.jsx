@@ -1,25 +1,38 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import MapEditor from './pages/MapEditor';       
 import MapPoiEditor from './pages/MapPoiEditor'; 
-import MapViewer from './pages/MapViewer';     
+import MapViewer from './pages/MapViewer';    
+import LoginPage from './pages/LoginPage';
+import AuthCallback from './pages/AuthCallback';
+import { MapGallery } from './pages/MapGallery';
+import HomePage from './pages/HomePage';
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* 1. Tela Inicial: Galeria de Mapas */}
-        <Route path="/" element={<MapViewer />} />
+        {/* Home */}
+        <Route path="/" element={<HomePage />} />
+
+        {/* Galeria de Blocos */}
+        <Route path="/map-gallery" element={<MapGallery />} />
+
+        {/* Editor de Mapas */}
         <Route path="/map-editor" element={<MapEditor />} />
+        
+        {/* 👇 AQUI ESTÁ A CORREÇÃO: de :id/pontos para :blockId */}
+        <Route path="/map-editor/:blockId" element={<MapPoiEditor />} />
 
-        {/* 2. Tela do Editor: Onde você desenha os pontos sobre a imagem */}
-        <Route path="/map-editor/:id/pontos" element={<MapPoiEditor />} />
+        {/* Visualizador do Workspace */}
+        <Route path="/map-viewer" element={<MapViewer />} />
 
-        {/* 3. Tela do Visualizador: Onde você vê o mapa e navega */}
-        <Route path="/map-viewer/" element={<MapViewer />} />
+        {/* Login e Callback */}
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/auth/callback" element={<AuthCallback />} />
 
-        <Route path="/map-viewer/:id" element={<MapViewer />} />
+        <Route path="/admin/maps" element={<Navigate to="/map-editor" replace />} />
 
-        {/* Rota de Fallback para links quebrados */}
+        {/* Fallback 404 */}
         <Route path="*" element={
           <div className="flex h-screen items-center justify-center bg-[#0b1a30] text-white">
             <div className="text-center">

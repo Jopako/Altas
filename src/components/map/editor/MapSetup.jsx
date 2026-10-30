@@ -24,6 +24,7 @@ export function MapSetup({
   finishPathDraft,
   mapData,
   previewLargura,
+  blockBounds,
 }) {
   const map = useMap();
   const snapManagerRef = useRef(null);
@@ -85,7 +86,10 @@ export function MapSetup({
 
   useEffect(() => {
     if (!map || !featureGroupRef.current) return;
-    const imageBounds = L.latLngBounds(MAP_BOUNDS);
+    // Usa os limites do bloco ativo se existir. Se não, cai no MAP_BOUNDS
+    const imageBounds = blockBounds && blockBounds.length === 2 
+      ? L.latLngBounds(blockBounds) 
+      : L.latLngBounds(MAP_BOUNDS);
     const isSnappable = activeTool === 'point' || activeTool === 'path';
     map.getContainer().style.cursor = activeTool === 'select' ? '' : 'crosshair';
 
@@ -163,7 +167,7 @@ export function MapSetup({
       snap.clearSnapIndicator();
       map.getContainer().style.cursor = '';
     };
-  }, [activeTool, featureGroupRef, finishPolygonDraft, finishPathDraft, map, mapData, setDrawingPoints]);
+  }, [activeTool, featureGroupRef, finishPolygonDraft, finishPathDraft, map, mapData, setDrawingPoints, blockBounds]);
 
   useEffect(() => {
     const draft = draftRendererRef.current;
