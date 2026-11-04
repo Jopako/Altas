@@ -13,7 +13,7 @@ export async function getPublic(_req, res) {
     const ws = await findPublicWorkspace();
     // Se não existir workspace público, retorna um padrão vazio
     res.json(ws || {
-      name: 'Workspace ALTAS',
+      name: 'Minha Workspace',
       blockMeta: {},
       features: { type: 'FeatureCollection', features: [] }
     });
@@ -30,7 +30,7 @@ export async function getMe(req, res) {
     
     // Se for o primeiro acesso do admin, manda um workspace vazio padrão
     res.json(ws || {
-      name: 'Workspace ALTAS',
+      name: 'Minha Workspace',
       blockMeta: {},
       features: { type: 'FeatureCollection', features: [] }
     });

@@ -1,13 +1,5 @@
 /**
  * graph.js — Navegação indoor por EIXO de corredor.
- *
- * Modelo:
- *  - O usuário desenha UMA linha por corredor (o eixo).
- *  - O editor pode salvar a largura em properties.largura (default 60).
- *  - O graph.js densifica o eixo em nós e conecta em trilha.
- *  - A rota anda SOBRE o eixo, virando nas curvas.
- *  - Salas conectam ao nó do eixo mais próximo.
- *  - A faixa (largura) é só visual — o grafo não a usa.
  */
 
 export function toPoint(target) {
@@ -61,10 +53,6 @@ function pointInPolygon(px, py, ring) {
   return inside;
 }
 
-/**
- * Engrossa uma LineString num Polygon (faixa) — usado apenas para render
- * visual no Viewer. O grafo NÃO usa isso.
- */
 export function lineStringToPolygon(coords, halfWidth = 30) {
   if (!coords || coords.length < 2) return null;
 
@@ -175,13 +163,15 @@ export function buildGraph(featureCollection) {
   const corridorNodes = [];
 
   // 1. Densifica cada eixo e cria trilha linear
-  for (const corr of corridors) {
+  for (let cIdx = 0; cIdx < corridors.length; cIdx++) {
+    const corr = corridors[cIdx];
     const dense = densifyLine(corr.coords, DENSIFY_STEP);
     const chain = [];
     for (const [x, y] of dense) {
       const key = keyOf({ x, y });
       if (!graph[key]) graph[key] = [];
-      chain.push({ x, y, key });
+      // 👇 Adiciona o ID do corredor no nó
+      chain.push({ x, y, key, corridorId: cIdx }); 
     }
     for (let i = 0; i < chain.length - 1; i++) {
       const a = chain[i];
@@ -209,7 +199,7 @@ export function buildGraph(featureCollection) {
     }
   }
 
-  // 3. Conecta salas ao nó do eixo mais próximo
+  // 3. Conecta salas aos eixos mais próximos (MÁGICA DA TRAVESSIA AQUI)
   const roomCenterKey = new Map();
   for (const r of rooms) {
     const pts = r.ring.slice(0, -1);
@@ -219,15 +209,31 @@ export function buildGraph(featureCollection) {
     if (!graph[centerKey]) graph[centerKey] = [];
     roomCenterKey.set(r.id, centerKey);
 
-    let best = null;
+    // Agrupa o nó mais próximo de cada corredor DIFERENTE
+    const closestPerCorridor = new Map(); // corridorId -> { p, d }
+    
     for (const p of corridorNodes) {
+      const cId = p.corridorId ?? 0; // Fallback pra segurança
       const d = Math.hypot(p.x - cx, p.y - cy);
-      if (!best || d < best.d) best = { p, d };
+      const existing = closestPerCorridor.get(cId);
+      if (!existing || d < existing.d) {
+        closestPerCorridor.set(cId, { p, d });
+      }
     }
-    if (!best) continue;
 
-    addEdge(graph, centerKey, best.p.key, best.d, r.acessivel);
-    addEdge(graph, best.p.key, centerKey, best.d, r.acessivel);
+    // Ordena do mais próximo pro mais longe
+    const sortedCorridors = Array.from(closestPerCorridor.values()).sort((a, b) => a.d - b.d);
+
+    let connections = 0;
+    for (const item of sortedCorridors) {
+      // Só conecta se o corredor estiver a uma distância razoável (ex: 150)
+      if (item.d < 150) {
+        addEdge(graph, centerKey, item.p.key, item.d, r.acessivel);
+        addEdge(graph, item.p.key, centerKey, item.d, r.acessivel);
+        connections++;
+        if (connections >= 2) break; // Conecta no máximo aos 2 corredores mais próximos
+      }
+    }
   }
 
   return {
@@ -253,11 +259,6 @@ function crossesAnyWall(a, b, rooms) {
   return false;
 }
 
-/**
- * Verifica se o segmento a→b fica colado no eixo do corredor.
- * Amostra pontos ao longo do segmento e checa se cada um está a
- * no máximo `maxDist` de algum nó do eixo.
- */
 function segmentStaysNearAxis(a, b, corridorNodes, maxDist) {
   if (!corridorNodes?.length) return true;
   const SAMPLES = 15;
@@ -274,12 +275,6 @@ function segmentStaysNearAxis(a, b, corridorNodes, maxDist) {
   return true;
 }
 
-/**
- * Alisa o caminho do Dijkstra.
- * Só puxa reta se:
- *   1. Não cruza parede de sala;
- *   2. Fica colado no eixo do corredor (a menos que seja transição de sala).
- */
 export function smoothPath(caminho, rooms, corridorNodes = [], maxDistFromAxis = 40) {
   if (!caminho || caminho.length <= 2) return caminho || [];
 
@@ -293,15 +288,12 @@ export function smoothPath(caminho, rooms, corridorNodes = [], maxDistFromAxis =
       const a = points[i];
       const b = points[j];
 
-      // 1. Não pode cruzar parede de sala
       if (crossesAnyWall(a, b, rooms)) continue;
 
-      // 2. Transição de sala: libera
       const aInRoom = isPointInsideAnyRoom(a, rooms);
       const bInRoom = isPointInsideAnyRoom(b, rooms);
       const isRoomTransition = aInRoom || bInRoom;
 
-      // 3. Precisa ficar colado no eixo (a não ser que seja transição)
       if (!isRoomTransition && !segmentStaysNearAxis(a, b, corridorNodes, maxDistFromAxis)) {
         continue;
       }

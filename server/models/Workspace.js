@@ -1,5 +1,5 @@
 /**
- * models/Workspace.js — Modelo do Workspace ALTAS no MongoDB.
+ * models/Workspace.js — Modelo do Workspace no MongoDB.
  *
  * Campos:
  *  - ownerId: string (email do usuário admin, ou 'system' para o público) — indexado
@@ -44,7 +44,7 @@ export async function upsertWorkspace(ownerId, { name, blockMeta, features }) {
   const filter = { ownerId };
   const update = {
     $set: {
-      name: name || 'Workspace ALTAS',
+      name: name || 'Minha Workspace',
       blockMeta: blockMeta || {},
       features: features || { type: 'FeatureCollection', features: [] },
       updatedAt: now,
@@ -63,7 +63,7 @@ export async function upsertWorkspace(ownerId, { name, blockMeta, features }) {
       { ownerId: 'system' },
       {
         $set: {
-          name: name || 'Workspace ALTAS',
+          name: name || 'Minha Workspace',
           blockMeta: blockMeta || {},
           features: features || { type: 'FeatureCollection', features: [] },
           updatedAt: now,

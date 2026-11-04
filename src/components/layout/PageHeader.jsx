@@ -1,33 +1,24 @@
 /**
  * PageHeader — Cabeçalho principal com navegação desktop, menu mobile e alternador de tema.
  */
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import AltasMark from "../../assets/imgs/altas-mark.svg";
 import { MobileNav } from "../ui/MobileNav";
 import { publicNavLinks } from "../../lib/navLinks";
 import { SunIcon, MoonIcon, MenuIcon, MenuCloseIcon, UserIcon } from "../icons/Icons";
+import { isTokenValid, getUserFromToken } from "../../lib/auth"; 
 
 function useAuth() {
-  const token = localStorage.getItem('jwt_token');
+  const isValid = isTokenValid();
+  const email = isValid ? getUserFromToken() : null;
   
-  // Lê o e-mail de dentro do JWT (base64)
-  const email = useMemo(() => {
-    if (!token) return null;
-    try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      return payload.email || payload.preferred_username || null;
-    } catch (err) {
-      return null;
-    }
-  }, [token]);
-
   function logout() {
     localStorage.removeItem('jwt_token');
     window.location.href = '/';
   }
   
-  return { isLoggedIn: Boolean(token), email, logout };
+  return { isLoggedIn: isValid, email, logout };
 }
 
 export function PageHeader({ theme, setTheme, actions }) {

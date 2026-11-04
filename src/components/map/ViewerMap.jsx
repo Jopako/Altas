@@ -9,7 +9,7 @@ import { ORIGEM_STYLE, DESTINO_STYLE, DEFAULT_AREA_STYLE, DEFAULT_POINT_STYLE } 
 import { lineStringToPolygon } from '../../lib/graph';
 import { getFeatureCenter } from '../../lib/geo';
 import { trimRouteToSalas } from '../../lib/routeUtils';
-import { FundoEsquematico } from './FundoEsquematico'; // 👈 Import de volta
+import { FundoEsquematico } from './FundoEsquematico'; //
 import { RouteFocus } from './RouteFocus';
 import { InvalidateMapSize } from './InvalidateMapSize';
 
@@ -110,6 +110,7 @@ export function ViewerMap({
   poiLayersRef,
   handlePoiClickRef,
   poiSelecionado,
+  isRoutePanelOpen,
 }) {
   const isDark = theme === 'dark';
   const blockMeta = workspace?.blockMeta || {};
@@ -207,7 +208,12 @@ export function ViewerMap({
               {!blocoAtivo && (
                 <Rectangle
                   bounds={leafletBounds}
-                  pathOptions={{ color: 'transparent', fillColor: 'transparent', fillOpacity: 0.05 }}
+                  pathOptions={{ 
+                    color: 'transparent', 
+                    fillColor: 'transparent', 
+                    fillOpacity: 0.05,
+                    interactive: !isRoutePanelOpen 
+                  }}
                   eventHandlers={{ click: () => { if (onBlocoClick) onBlocoClick(blockId); } }}
                 />
               )}

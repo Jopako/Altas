@@ -9,6 +9,16 @@ import {
   applySelectedLayerStyle,
 } from "../components/map/editor/layerStyles";
 
+const MIN_BLOCK_DISTANCE = 150;
+
+// Transladar coordenadas GeoJSON recursivamente ([lng, lat] no CRS.Simple)
+function translateFeatureCoords(coords, dx, dy) {
+  if (typeof coords[0] === "number") {
+    return [coords[0] + dx, coords[1] + dy];
+  }
+  return coords.map((c) => translateFeatureCoords(c, dx, dy));
+}
+
 export function usePoiEditor(setMapData) {
   const [workspace, setWorkspace] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -64,7 +74,8 @@ export function usePoiEditor(setMapData) {
     // 2. Garante que o blockId foi salvo em todas
     const featuresWithBlockId = currentFeatures.map(f => ({
       ...f,
-      properties: { ...f.properties, blockId: selectedBlockId }
+      //Se a feature já tem blockId (é de outro bloco), mantém. Se for nova, põe o atual.
+      properties: { ...f.properties, blockId: f.properties?.blockId || selectedBlockId }
     }));
 
     // 3. Pega o que já existia no workspace dos OUTROS blocos
@@ -80,7 +91,7 @@ export function usePoiEditor(setMapData) {
     };
 
     const payload = {
-      name: workspace.name || "Workspace ALTAS",
+      name: workspace.name || "Minha Workspace",
       features: mergedFeatures,
       blockMeta: workspace.blockMeta || {},
     };
@@ -230,6 +241,97 @@ export function usePoiEditor(setMapData) {
     setActiveTool('select');
   }
 
+  /**
+   * Move um bloco inteiro (bounds + todas as features do bloco).
+   * Valida colisão com margem mínima. Atualiza estado React e layers do Leaflet.
+   * @returns {boolean} true se moveu com sucesso
+   */
+  function moveBlock(blockId, dx, dy) {
+    if (!workspace || !blockId) return false;
+
+    const currentMeta = workspace.blockMeta?.[blockId];
+    if (!currentMeta || !currentMeta.bounds) return false;
+
+    const currentBounds = currentMeta.bounds;
+
+    // Bounds no Leaflet: [[south, west], [north, east]] → no CRS.Simple é [[y0, x0], [y1, x1]]
+    const newBounds = [
+      [currentBounds[0][0] + dy, currentBounds[0][1] + dx],
+      [currentBounds[1][0] + dy, currentBounds[1][1] + dx],
+    ];
+
+    // 1. Validação de colisão (margem mínima)
+    const hasCollision = Object.entries(workspace.blockMeta || {}).some(([otherId, meta]) => {
+      if (otherId === blockId || !meta.bounds) return false;
+      const other = meta.bounds;
+      return (
+        newBounds[0][0] < other[1][0] + MIN_BLOCK_DISTANCE &&
+        newBounds[1][0] > other[0][0] - MIN_BLOCK_DISTANCE &&
+        newBounds[0][1] < other[1][1] + MIN_BLOCK_DISTANCE &&
+        newBounds[1][1] > other[0][1] - MIN_BLOCK_DISTANCE
+      );
+    });
+
+    if (hasCollision) {
+      alert("Distância mínima entre blocos não respeitada!");
+      return false;
+    }
+
+    // 2. Atualiza as coordenadas das features no estado
+    const allFeatures = workspace.features?.features || [];
+    const updatedFeatures = allFeatures.map((f) => {
+      if (f.properties?.blockId !== blockId) return f;
+      return {
+        ...f,
+        geometry: {
+          ...f.geometry,
+          coordinates: translateFeatureCoords(f.geometry.coordinates, dx, dy),
+        },
+      };
+    });
+
+    // 3. Novo estado do workspace
+    const newWorkspace = {
+      ...workspace,
+      blockMeta: {
+        ...workspace.blockMeta,
+        [blockId]: { ...currentMeta, bounds: newBounds },
+      },
+      features: { type: "FeatureCollection", features: updatedFeatures },
+    };
+
+    setWorkspace(newWorkspace);
+    if (setMapData) setMapData(newWorkspace);
+
+    // 4. Atualiza visualmente os layers já renderizados no FeatureGroup
+    if (featureGroupRef.current) {
+      featureGroupRef.current.eachLayer((layer) => {
+        if (layer.feature?.properties?.blockId !== blockId) return;
+
+        if (layer.setLatLngs) {
+          const latlngs = layer.getLatLngs();
+          // Polygon: array de rings; Polyline: array de pontos
+          if (Array.isArray(latlngs[0])) {
+            const newLatLngs = latlngs.map((ring) =>
+              ring.map((p) => L.latLng(p.lat + dy, p.lng + dx))
+            );
+            layer.setLatLngs(newLatLngs);
+          } else {
+            const newLatLngs = latlngs.map((p) => L.latLng(p.lat + dy, p.lng + dx));
+            layer.setLatLngs(newLatLngs);
+          }
+        }
+
+        if (layer.setLatLng) {
+          const p = layer.getLatLng();
+          layer.setLatLng(L.latLng(p.lat + dy, p.lng + dx));
+        }
+      });
+    }
+
+    return true;
+  }
+
   return {
     workspace, loading, selectedBlockId, setSelectedBlockId,
     selectedLayerKey, selectedLayerKind, activeTool, setActiveTool, drawingPoints, setDrawingPoints,
@@ -237,6 +339,6 @@ export function usePoiEditor(setMapData) {
     poiAcessivel, setPoiAcessivel, poiLargura, setPoiLargura, savingMap,
     featureGroupRef, selectedLayerRef, selectLayerHandlerRef, selectLayer, clearPoiForm,
     applyPoiChanges, selectMappingTool, finishPolygonDraft, finishPathDraft,
-    saveFeatures, handlePoiPhotoUpload,
+    saveFeatures, handlePoiPhotoUpload, moveBlock,
   };
 }

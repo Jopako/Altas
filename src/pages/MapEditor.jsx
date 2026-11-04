@@ -34,7 +34,7 @@ export default function MapEditor() {
         
         if (!ws || typeof ws !== 'object') {
           ws = {
-            name: "Workspace ALTAS",
+            name: "Minha Workspace",
             blockMeta: {},
             features: { type: "FeatureCollection", features: [] }
           };
@@ -90,7 +90,7 @@ export default function MapEditor() {
         };
 
         const payload = {
-          name: workspace.name || "Workspace ALTAS",
+          name: workspace.name || "Minha Workspace",
           blockMeta: newBlockMeta,
           features: workspace.features,
         };
@@ -136,7 +136,7 @@ export default function MapEditor() {
       );
 
       const payload = {
-        name: workspace.name || "Workspace ALTAS",
+        name: workspace.name || "Minha Workspace",
         blockMeta: newBlockMeta,
         features: { type: 'FeatureCollection', features: newFeaturesList },
       };

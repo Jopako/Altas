@@ -167,7 +167,7 @@ export default function MapViewer() {
   );
   const listaPois = [...areas, ...pontos].filter((f) => f.properties?.name);
 
-  // 👇 Lista Geral para a Rota
+  // Lista Geral para a Rota
   const todasAreas = featuresUnicas.filter(
     (f) => f.geometry?.type === "Polygon" && !(f.properties?.kind === "edge" || f.properties?.tipo === "corredor")
   );
@@ -208,6 +208,7 @@ export default function MapViewer() {
             poiLayersRef={poiLayersRef}
             handlePoiClickRef={handlePoiClickRef}
             poiSelecionado={poiSelecionado}
+            isRoutePanelOpen={isRoutePanelOpen}
           />
         }
         panel={
@@ -238,7 +239,7 @@ export default function MapViewer() {
             {todosPoisParaRota.length >= 1 && (
               <RoutePanel
                 theme={theme}
-                listaPois={todosPoisParaRota} // 👈 Lista geral, permite rotas entre blocos
+                listaPois={todosPoisParaRota} // Lista geral, permite rotas entre blocos
                 alvoAtivo={alvoAtivo}
                 setAlvoAtivo={setAlvoAtivo}
                 navOrigem={navOrigem}

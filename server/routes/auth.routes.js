@@ -15,20 +15,16 @@ const router = Router();
 router.get('/microsoft',           authCtrl.microsoftRedirect);
 router.get('/microsoft/callback',  authCtrl.microsoftCallback);
 
-// OAuth Google (mantido se quiser ativar futuramente)
-router.get('/google',              authCtrl.googleRedirect);
-router.get('/google/callback',     authCtrl.googleCallback);
-
 /**
  * @swagger
  * /api/auth/login:
  *   post:
- *     summary: Login com e-mail e senha (legado)
+ *     summary: Login tradicional com e-mail e senha
  *     tags: [Auth]
  */
 router.post('/login', authCtrl.login);
 
-// /register foi removido — autenticação é apenas via OAuth Microsoft.
+// /register e OAuth Google foram removidos — autenticação apenas via Microsoft e Login Direto.
 
 /**
  * @swagger

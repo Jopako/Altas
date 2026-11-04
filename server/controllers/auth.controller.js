@@ -4,41 +4,29 @@ import { getUserFavorites, toggleUserFavorite } from '../services/user.service.j
 const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
 const port        = process.env.PORT          || 3000;
 
-export const googleRedirect = (_req, res) => {
-  const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${process.env.GOOGLE_CLIENT_ID}`
-    + `&redirect_uri=http://localhost:${port}/auth/google/callback`
-    + `&response_type=code&scope=profile email`;
-  res.redirect(url);
-};
-
-export const googleCallback = async (req, res) => {
-  try {
-    const redirectUrl = await authService.handleGoogleCallback(req.query.code);
-    res.redirect(redirectUrl);
-  } catch (err) {
-    console.error(err);
-    res.redirect(`${frontendUrl}/login?error=auth_failed`);
-  }
+// Garante a URI correta em desenvolvimento ou produção
+const getRedirectUri = (req, envKey, fallbackPath) => {
+  if (process.env[envKey]) return process.env[envKey];
+  const protocol = req.protocol || 'http';
+  const host = req.get('host') || `localhost:${port}`;
+  return `${protocol}://${host}${fallbackPath}`;
 };
 
 export const microsoftRedirect = (req, res) => {
-  const protocol = req.protocol || 'http';
-  const host = req.get('host') || `localhost:${port}`;
-  // Usa MS_REDIRECT_URI se definido no .env, senão usa a URI cadastrada no Azure (/auth/microsoft/callback)
-  const redirectUri = process.env.MS_REDIRECT_URI || `${protocol}://${host}/auth/microsoft/callback`;
+  const redirectUri = getRedirectUri(req, 'MS_REDIRECT_URI', '/auth/microsoft/callback');
   const url = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize`
     + `?client_id=${process.env.MS_CLIENT_ID}`
     + `&response_type=code`
     + `&redirect_uri=${encodeURIComponent(redirectUri)}`
-    + `&response_mode=query&scope=openid+profile+email+User.Read`;
+    + `&response_mode=query`
+    + `&scope=openid+profile+email+User.Read`;
+    
   res.redirect(url);
 };
 
 export const microsoftCallback = async (req, res) => {
   try {
-    const protocol = req.protocol || 'http';
-    const host = req.get('host') || `localhost:${port}`;
-    const redirectUri = process.env.MS_REDIRECT_URI || `${protocol}://${host}/auth/microsoft/callback`;
+    const redirectUri = getRedirectUri(req, 'MS_REDIRECT_URI', '/auth/microsoft/callback');
     const redirectUrl = await authService.handleMicrosoftCallback(req.query.code, redirectUri);
     res.redirect(redirectUrl);
   } catch (err) {
@@ -46,8 +34,6 @@ export const microsoftCallback = async (req, res) => {
     res.redirect(`${frontendUrl}/login?error=auth_failed`);
   }
 };
-
-// /register removido — apenas OAuth Microsoft.
 
 export const login = async (req, res) => {
   const { email, password } = req.body;

@@ -1,7 +1,6 @@
 import axios from 'axios';
 import jwt from 'jsonwebtoken';
 import {
-  saveOrUpdateUser,
   findUserByEmail,
   createUser,
   hashPassword,
@@ -56,25 +55,7 @@ function isAuthorized(email, tid) {
   return false;
 }
 
-// ── OAuth helpers ────────────────────────────────────────────────────────────
-
-export async function handleGoogleCallback(code) {
-  const { data: tokens } = await axios.post('https://oauth2.googleapis.com/token', {
-    client_id:     process.env.GOOGLE_CLIENT_ID,
-    client_secret: process.env.GOOGLE_CLIENT_SECRET,
-    code,
-    redirect_uri:  `http://localhost:${port}/auth/google/callback`,
-    grant_type:    'authorization_code',
-  });
-
-  const { data: info } = await axios.get('https://www.googleapis.com/oauth2/v2/userinfo', {
-    headers: { Authorization: `Bearer ${tokens.access_token}` },
-  });
-
-  const user = await saveOrUpdateUser(info);
-  const token = signToken({ email: user.email, name: user.name, role: user.role });
-  return `${frontendUrl}/auth/callback?token=${token}`;
-}
+// ── OAuth Microsoft ──────────────────────────────────────────────────────────
 
 export async function handleMicrosoftCallback(code, customRedirectUri) {
   const redirect_uri = customRedirectUri || process.env.MS_REDIRECT_URI || `http://localhost:${port}/auth/microsoft/callback`;
@@ -131,7 +112,7 @@ export async function handleMicrosoftCallback(code, customRedirectUri) {
   return `${frontendUrl}/auth/callback?token=${token}`;
 }
 
-// ── Standard auth (mantido para compatibilidade — sem rota de cadastro pública) ──
+// ── Autenticação Tradicional ─────────────────────────────────────────────────
 
 export async function login({ email, password }) {
   const user = await findUserByEmail(email.toLowerCase().trim());
