@@ -74,7 +74,7 @@ export default function MapEditor() {
         const scale = MAP_WIDTH / img.width;
         const MAP_HEIGHT = img.height * scale;
         
-        // 👇 A MÁGICA ACONTECE AQUI: Espaçamento entre blocos
+        // A MÁGICA ACONTECE AQUI: Espaçamento entre blocos
         const blockCount = Object.keys(workspace.blockMeta || {}).length;
         const offsetX = blockCount * 1500; 
         const bounds = [[500, 500 + offsetX], [500 + MAP_HEIGHT, 500 + offsetX + MAP_WIDTH]];

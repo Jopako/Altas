@@ -170,7 +170,7 @@ export function buildGraph(featureCollection) {
     for (const [x, y] of dense) {
       const key = keyOf({ x, y });
       if (!graph[key]) graph[key] = [];
-      // 👇 Adiciona o ID do corredor no nó
+      // Adiciona o ID do corredor no nó
       chain.push({ x, y, key, corridorId: cIdx }); 
     }
     for (let i = 0; i < chain.length - 1; i++) {

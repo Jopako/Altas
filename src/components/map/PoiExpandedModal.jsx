@@ -14,7 +14,7 @@ export function PoiExpandedModal({ theme, poi, onClose, onOuvir, onLibras }) {
 
   const props = poi.properties || {};
   
-  // 👇 Lê a galeria unificada (com fallback para os dados antigos)
+  // Lê a galeria unificada (com fallback para os dados antigos)
   const gallery = props.gallery?.length > 0 
     ? props.gallery 
     : (props.photoUrl ? [{ photo: props.photoUrl, description: props.description }] : []);

@@ -20,7 +20,7 @@ function App() {
         {/* Editor de Mapas */}
         <Route path="/map-editor" element={<MapEditor />} />
         
-        {/* 👇 AQUI ESTÁ A CORREÇÃO: de :id/pontos para :blockId */}
+        {/* AQUI ESTÁ A CORREÇÃO: de :id/pontos para :blockId */}
         <Route path="/map-editor/:blockId" element={<MapPoiEditor />} />
 
         {/* Visualizador do Workspace */}
