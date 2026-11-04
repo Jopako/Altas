@@ -6,7 +6,7 @@ import { loadPublicWorkspace, loadMyWorkspace } from "../lib/workspacesStorage";
 import { getFeatureCenter } from "../lib/geo";
 import { ORIGEM_STYLE, DESTINO_STYLE, DEFAULT_AREA_STYLE, DEFAULT_POINT_STYLE } from "../lib/mapConstants";
 import { useIndoorRoute } from "../hooks/useIndoorRoute";
-
+import { playTextToSpeech } from '../lib/tts'
 import { PageLayout, PageHeader } from "../components/PageLayout";
 import { MapSplitLayout } from "../components/ui/MapSplitLayout";
 import { GhostButton } from "../components/ui/GhostButton";
@@ -77,6 +77,7 @@ export default function MapViewer() {
     handlePoiClickRef.current = (poi) => {
       if (!isRoutePanelOpen) {
         setPoiSelecionado(poi.feature || null);
+        // CORREÇÃO: Abre o modal de forma síncrona sem setTimeout para evitar desincronização de estado
         setPoiExpandido(poi.feature || null);
         return;
       }
@@ -148,9 +149,7 @@ export default function MapViewer() {
   const uniqueFeaturesMap = new Map();
   allFeatures.forEach((f, index) => {
     const id = f.properties?.id || `no-id-${index}`;
-    if (!uniqueFeaturesMap.has(id)) {
-      uniqueFeaturesMap.set(id, f);
-    }
+    uniqueFeaturesMap.set(id, f); 
   });
   const featuresUnicas = Array.from(uniqueFeaturesMap.values());
 
@@ -167,7 +166,6 @@ export default function MapViewer() {
   );
   const listaPois = [...areas, ...pontos].filter((f) => f.properties?.name);
 
-  // Lista Geral para a Rota
   const todasAreas = featuresUnicas.filter(
     (f) => f.geometry?.type === "Polygon" && !(f.properties?.kind === "edge" || f.properties?.tipo === "corredor")
   );
@@ -178,12 +176,7 @@ export default function MapViewer() {
     <PageLayout theme={theme} fullBleed>
       <PageHeader theme={theme} setTheme={setTheme} />
       <div className="relative z-10 px-4 sm:px-10 pt-3 pb-5">
-        <GhostButton 
-          theme={theme} 
-          variant="overlay" 
-          size="sm" 
-          onClick={() => navigate("/map-gallery")} 
-        >
+        <GhostButton theme={theme} variant="overlay" size="sm" onClick={() => navigate("/map-gallery")}>
           <BackIcon className="h-4 w-4 shrink-0" /> Voltar aos Blocos
         </GhostButton>
       </div>
@@ -232,14 +225,29 @@ export default function MapViewer() {
               pois={listaPois}
               poiSelecionado={poiSelecionado}
               onSelectPoi={handleCardClick}
-              onOuvir={(poi) => alert("Audiodescrição: " + (poi.properties.description || ""))}
-              onLibras={(poi) => alert("Aqui entraria o VLibras.")}
+              onOuvir={async (poi) => {
+                // Monta o texto juntando o nome e a descrição
+                const nome = poi.properties?.name || 'Local sem nome';
+                const descricao = poi.properties?.gallery?.[0]?.description || poi.properties?.description || '';
+                
+                // Se tiver descrição, fala "Nome. Descrição". Se não, fala só o nome.
+                const textoParaFalar = descricao 
+                  ? `${nome}. ${descricao}` 
+                  : `${nome}. Sem descrição cadastrada.`;
+
+                try {
+                  // Chama a API de TTS (lembre-se de importar playTextToSpeech no topo do MapViewer)
+                  await playTextToSpeech(textoParaFalar);
+                } catch (err) {
+                  alert("Erro ao reproduzir o áudio.");
+                }
+              }}
             />
 
             {todosPoisParaRota.length >= 1 && (
               <RoutePanel
                 theme={theme}
-                listaPois={todosPoisParaRota} // Lista geral, permite rotas entre blocos
+                listaPois={todosPoisParaRota}
                 alvoAtivo={alvoAtivo}
                 setAlvoAtivo={setAlvoAtivo}
                 navOrigem={navOrigem}
@@ -265,8 +273,6 @@ export default function MapViewer() {
           theme={theme}
           poi={poiExpandido}
           onClose={() => setPoiExpandido(null)}
-          onOuvir={(poi) => alert("Audiodescrição: " + (poi.properties.description || ""))}
-          onLibras={(poi) => alert("Aqui entraria o VLibras.")}
         />
       )}
     </PageLayout>

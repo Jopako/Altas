@@ -2,7 +2,6 @@ import { Fragment } from 'react';
 import { ImageOverlay, Rectangle } from 'react-leaflet';
 import L from 'leaflet';
 
-/** Imagens dos blocos + retângulos clicáveis (só com o painel de rotas fechado). */
 export function MapBlocks({ blockMeta, blocoAtivo, isRoutePanelOpen, onBlocoClick }) {
   return Object.entries(blockMeta).map(([blockId, meta]) => {
     if (!meta?.bounds || !Array.isArray(meta.bounds) || meta.bounds.length !== 2) return null;
@@ -14,30 +13,34 @@ export function MapBlocks({ blockMeta, blocoAtivo, isRoutePanelOpen, onBlocoClic
 
     const isAtivo = blocoAtivo === blockId;
     const mostrarImagem = !blocoAtivo || isAtivo;
+    const isInteractive = !isRoutePanelOpen && blocoAtivo !== blockId;
 
     return (
       <Fragment key={`bloco-${blockId}-${meta.name}`}>
-        {/* Imagem só do bloco ativo (ou de todos se não tiver nenhum ativo) */}
         {meta.imageUrl && mostrarImagem && (
           <ImageOverlay url={meta.imageUrl} bounds={leafletBounds} opacity={1} />
         )}
-        <Rectangle
-          key={`rect-${blockId}-${isRoutePanelOpen}`} 
-          bounds={leafletBounds}
-          pathOptions={{
-            color: 'transparent',
-            fillColor: 'transparent',
-            fillOpacity: 0.05,
-            interactive: !isRoutePanelOpen,
-          }}
-          eventHandlers={{
-            click: () => {
-              // Trava de segurança: se o painel tiver aberto, aborta o clique
-              if (isRoutePanelOpen) return;
-              if (blockId !== blocoAtivo && onBlocoClick) onBlocoClick(blockId);
-            },
-          }}
-        />
+
+        {isInteractive && (
+          <Rectangle
+            key={`rect-${blockId}-${isRoutePanelOpen}-${blocoAtivo}`} 
+            bounds={leafletBounds}
+            pathOptions={{
+              color: 'transparent',
+              fillColor: 'transparent',
+              fillOpacity: 0,
+              interactive: true,
+            }}
+            eventHandlers={{
+              click: (e) => {
+                if (e.originalEvent) {
+                  L.DomEvent.stopPropagation(e.originalEvent);
+                }
+                if (onBlocoClick) onBlocoClick(blockId);
+              },
+            }}
+          />
+        )}
       </Fragment>
     );
   });

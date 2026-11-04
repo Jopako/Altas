@@ -7,6 +7,7 @@ import authRoutes        from './routes/auth.routes.js';
 import mapsRoutes        from './routes/maps.routes.js';
 import healthRoutes      from './routes/health.routes.js';
 import workspacesRoutes  from './routes/workspaces.routes.js';
+import ttsRoutes         from './routes/tts.routes.js';
 import { connectDB } from "./config/database.js";
 import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './docs/swagger.js';
@@ -46,6 +47,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/api/auth',        authRoutes);
 app.use('/api/maps',        mapsRoutes);
 app.use('/api/workspaces',  workspacesRoutes);
+app.use('/api/tts',         ttsRoutes);
 app.use('/api',             healthRoutes);
 app.use('/auth',            authRoutes); // rotas OAuth /auth/microsoft
 
