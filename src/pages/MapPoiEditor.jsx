@@ -32,6 +32,8 @@ export default function MapPoiEditor() {
     moveBlock,
   } = usePoiEditor(setMapData);
 
+  const isDark = theme === 'dark';
+
   useEffect(() => {
     if (blockId && blockId !== selectedBlockId) {
       setSelectedBlockId(blockId);
@@ -40,14 +42,13 @@ export default function MapPoiEditor() {
 
   if (loading || !workspace) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0d203b] text-white">
+      <div className={`min-h-screen flex items-center justify-center ${isDark ? 'bg-[#0d203b] text-white' : 'bg-[#D7E7FF] text-[#1B2F55]'}`}>
         <p>Carregando editor...</p>
       </div>
     );
   }
 
   const blocksList = Object.entries(workspace.blockMeta || {});
-  const isGlobalMode = selectedBlockId === 'global';
 
   return (
     <PageLayout theme={theme} fullBleed>
@@ -65,9 +66,10 @@ export default function MapPoiEditor() {
         panelWidth="editor"
         panel={
           <EditorSidebar theme={theme} mapName={workspace.name || "Workspace"}>
-            {/* Seletor de Bloco Ativo */}
             <div className="mb-4">
-              <label className="text-xs font-semibold mb-1 block text-white/70">Bloco em Edição:</label>
+              <label className={`text-xs font-semibold mb-1 block ${isDark ? 'text-white/70' : 'text-[#1B2F55]/70'}`}>
+                Bloco em Edição:
+              </label>
               <select
                 value={selectedBlockId || ""}
                 onChange={(e) => {
@@ -77,25 +79,25 @@ export default function MapPoiEditor() {
                   if (newId) navigate(`/map-editor/${newId}`);
                   else navigate('/map-editor');
                 }}
-                className="w-full p-2 rounded-lg bg-black/20 text-white border border-white/10 text-sm outline-none cursor-pointer"
+                className={`w-full p-2 rounded-lg border text-sm outline-none cursor-pointer ${
+                  isDark ? 'bg-black/20 text-white border-white/10' : 'bg-white text-[#1B2F55] border-[#1B2F55]/20'
+                }`}
               >
                 <option value="">Selecione um bloco...</option>
-                {/* OPÇÃO DE CONEXÕES GLOBAIS */}
                 <option value="global">Conexões Globais (Entre Blocos)</option>
                 {blocksList.map(([id, meta]) => (
                   <option key={id} value={id}>{meta.name || id}</option>
                 ))}
               </select>
 
-              {/* Só mostra o botão de mover se NÃO for global */}
-              {selectedBlockId && !isGlobalMode && (
+              {selectedBlockId && selectedBlockId !== 'global' && (
                 <button
                   type="button"
                   onClick={() => setIsMovingBlock((prev) => !prev)}
                   className={`w-full mt-2 px-3 py-2 rounded-lg text-sm font-semibold transition-colors ${
                     isMovingBlock
                       ? "bg-[#F59E0B] text-white hover:bg-[#d97706]"
-                      : "bg-white/10 text-white hover:bg-white/20"
+                      : isDark ? "bg-white/10 text-white hover:bg-white/20" : "bg-[#1B2F55]/10 text-[#1B2F55] hover:bg-[#1B2F55]/20"
                   }`}
                 >
                   {isMovingBlock ? "Cancelar Movimentação" : "Mover Bloco"}
@@ -104,7 +106,9 @@ export default function MapPoiEditor() {
             </div>
 
             {!selectedBlockId ? (
-              <p className="text-sm text-white/50 italic">Selecione um bloco acima para começar a editar.</p>
+              <p className={`text-sm italic ${isDark ? 'text-white/50' : 'text-[#1B2F55]/50'}`}>
+                Selecione um bloco acima para começar a editar.
+              </p>
             ) : selectedLayerKey ? (
               selectedLayerKind === 'edge' ? (
                 <CorridorForm
@@ -133,18 +137,18 @@ export default function MapPoiEditor() {
               )
             ) : (
               <div className="flex-1 flex flex-col gap-4">
-                {/* Aviso no modo global */}
-                {isGlobalMode && (
-                  <div className="p-3 bg-blue-500/20 border border-blue-500/30 rounded-lg text-xs text-blue-200">
+                {selectedBlockId === 'global' && (
+                  <div className="p-3 bg-blue-500/20 border border-blue-500/30 rounded-lg text-xs text-blue-700 dark:text-blue-200">
                     <strong>Modo Global:</strong> Desenhe corredores e salas para conectar os blocos. As plantas aparecerão esmaecidas só como referência.
                   </div>
                 )}
 
-                <p className={`text-sm ${theme === 'dark' ? 'text-white/50' : 'text-[#1B2F55]/50'}`}>
-                  {isGlobalMode 
+                <p className={`text-sm ${isDark ? 'text-white/50' : 'text-[#1B2F55]/50'}`}>
+                  {selectedBlockId === 'global' 
                     ? 'Crie corredores para ligar os blocos ou salas externas.'
                     : 'Use as ferramentas abaixo para criar um ponto, uma área ou um corredor no bloco selecionado.'}
                 </p>
+                
                 <ToolPicker theme={theme} activeTool={activeTool} onSelectTool={selectMappingTool} />
                 <DraftActions
                   theme={theme}

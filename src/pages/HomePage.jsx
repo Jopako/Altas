@@ -43,7 +43,7 @@ function HomePage() {
                   ? "bg-[#2563EB] hover:bg-[#1d4ed8]"
                   : "bg-[#3F64A6] hover:bg-[#2F5EA8]"
               }`}
-              onClick={() => navigate("/ConhecaAltas")}
+              onClick={() => navigate("/conheca-altas")}
               type="button"
             >
               Conheça o ALTAS

@@ -6,6 +6,8 @@ import LoginPage from './pages/LoginPage';
 import AuthCallback from './pages/AuthCallback';
 import { MapGallery } from './pages/MapGallery';
 import HomePage from './pages/HomePage';
+import InstitiucoesPage from './pages/InstituicoesPage';
+import ConhecaAltasPage from './pages/ConhecaAltasPage';
 
 function App() {
   return (
@@ -30,6 +32,10 @@ function App() {
         <Route path="/auth/callback" element={<AuthCallback />} />
 
         <Route path="/admin/maps" element={<Navigate to="/map-editor" replace />} />
+
+        <Route path="/instituicoes" element={<InstitiucoesPage />} />
+
+        <Route path="/conheca-altas" element={<ConhecaAltasPage />} />
 
         {/* Fallback 404 */}
         <Route path="*" element={

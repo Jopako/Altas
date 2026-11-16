@@ -27,63 +27,66 @@ export function PageHeader({ theme, setTheme, actions }) {
   const location = useLocation();
   const { isLoggedIn, email, logout } = useAuth();
 
-  // Pega só o nome antes do "@" pra ficar menor
   const nomeUsuario = email ? email.split('@')[0] : null;
 
   return (
     <header className="relative z-30 flex items-center justify-between px-4 sm:px-10 lg:px-16 py-4 sm:py-5 flex-shrink-0">
-      {/* Lado esquerdo: Logo */}
-      <div className="flex items-center gap-2">
-        <button
-          type="button"
-          onClick={() => navigate("/")}
-          className="flex items-center gap-2 select-none cursor-pointer"
-          aria-label="Ir para a página inicial"
+      
+      {/* LADO ESQUERDO: Agrupando Logo e Nav (Padrão de mercado) */}
+      <div className="flex items-center gap-8 lg:gap-12">
+        {/* Logo */}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => navigate("/")}
+            className="flex items-center gap-2 select-none cursor-pointer"
+            aria-label="Ir para a página inicial"
+          >
+            <img src={AltasMark} alt="ALTAS" className="h-8 w-8 sm:h-9 sm:w-9" />
+            <span className="font-semibold tracking-[0.18em] text-[13px]">
+              ALTAS
+            </span>
+          </button>
+        </div>
+
+        {/* Nav Desktop */}
+        <nav
+          className={`hidden md:flex items-center gap-6 lg:gap-8 text-[16px] ${
+            theme === "dark" ? "text-white/70" : "text-[#1B2F55]/75"
+          }`}
+          aria-label="Navegação principal"
         >
-          <img src={AltasMark} alt="ALTAS" className="h-8 w-8 sm:h-9 sm:w-9" />
-          <span className="font-semibold tracking-[0.18em] text-[13px]">
-            ALTAS
-          </span>
-        </button>
+          {publicNavLinks.map((link) => {
+            const isActive = location.pathname === link.to;
+            const base = isActive
+              ? theme === "dark"
+                ? "text-white font-semibold"
+                : "text-[#1B2F55] font-semibold"
+              : theme === "dark"
+                ? "text-white/70 hover:text-white"
+                : "text-[#1B2F55]/75 hover:text-[#1B2F55]";
+
+            return (
+              <button
+                type="button"
+                key={link.to}
+                onClick={() => navigate(link.to)}
+                className={`transition-colors cursor-pointer ${base}`}
+                aria-current={isActive ? "page" : undefined}
+              >
+                {link.label}
+              </button>
+            );
+          })}
+        </nav>
       </div>
 
-      {/* Centro: Nav Desktop */}
-      <nav
-        className={`hidden md:flex items-center gap-7 text-[16px] ${
-          theme === "dark" ? "text-white/70" : "text-[#1B2F55]/75"
-        }`}
-        aria-label="Navegação principal"
-      >
-        {publicNavLinks.map((link) => {
-          const isActive = location.pathname === link.to;
-          const base = isActive
-            ? theme === "dark"
-              ? "text-white font-semibold"
-              : "text-[#1B2F55] font-semibold"
-            : theme === "dark"
-              ? "text-white/70 hover:text-white"
-              : "text-[#1B2F55]/75 hover:text-[#1B2F55]";
-
-          return (
-            <button
-              type="button"
-              key={link.to}
-              onClick={() => navigate(link.to)}
-              className={`transition-colors cursor-pointer ${base}`}
-              aria-current={isActive ? "page" : undefined}
-            >
-              {link.label}
-            </button>
-          );
-        })}
-      </nav>
-
-      {/* Lado direito */}
+      {/* LADO DIREITO: Ações, Login, Tema e Mobile */}
       <div className="flex items-center gap-2 sm:gap-3">
         {actions}
 
         <p
-          className={`hidden sm:block text-[10px] font-semibold tracking-[0.28em] uppercase ${
+          className={`hidden lg:block text-[10px] font-semibold tracking-[0.28em] uppercase mr-2 ${
             theme === "dark" ? "text-white/50" : "text-[#1B2F55]/50"
           }`}
         >
