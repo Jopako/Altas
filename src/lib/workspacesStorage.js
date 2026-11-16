@@ -1,20 +1,32 @@
 /**
- * workspacesStorage.js — Comunicação com a API de Workspace.
+- workspacesStorage.js — Comunicação com a API de Workspace.
  */
 import axios from 'axios';
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:3000';
+const API_BASE =
+  import.meta.env.VITE_API_BASE || `http://${window.location.hostname}:3000`;
 
 const api = axios.create({
   baseURL: API_BASE,
 });
+
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // Converte automaticamente qualquer URL "localhost:3000" vinda do banco para o IP/host atual
+    if (response.data && typeof response.data === 'object') {
+      const raw = JSON.stringify(response.data);
+      if (raw.includes('http://localhost:3000')) {
+        response.data = JSON.parse(
+          raw.replaceAll('http://localhost:3000', API_BASE)
+        );
+      }
+    }
+    return response;
+  },
   (error) => {
     if (error.response?.status === 401) {
-      console.warn("Sessão expirada. Redirecionando para o login...");
+      console.warn('Sessão expirada. Redirecionando para o login...');
       localStorage.removeItem('jwt_token');
-      // Evita loop infinito de reload se já estiver na página de login
       if (window.location.pathname !== '/login') {
         window.location.href = '/login';
       }
@@ -34,7 +46,6 @@ function authHeaders() {
 
 /** GET /api/workspaces/public — sem autenticação */
 export async function loadPublicWorkspace() {
-  // Usa a instância api em vez do axios global
   const res = await api.get('/api/workspaces/public');
   return res.data;
 }

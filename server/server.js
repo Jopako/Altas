@@ -28,8 +28,10 @@ const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:5173')
 
 app.use(cors({
   origin: (origin, cb) => {
-    // Permite requisições sem origin (ex: curl, mobile) e as origins listadas
-    if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
+    const isLocalNetwork = origin && /^http:\/\/(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+)(:\d+)?$/.test(origin);
+    if (!origin || allowedOrigins.includes(origin) || isLocalNetwork) {
+      return cb(null, true);
+    }
     cb(new Error(`CORS bloqueado para: ${origin}`));
   },
   credentials: true,

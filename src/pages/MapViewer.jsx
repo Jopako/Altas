@@ -54,6 +54,7 @@ export default function MapViewer() {
   const alvoAtivoRef = useRef("origem");
   const handlePoiClickRef = useRef(null);
   const poiLayersRef = useRef(new Map());
+  const processedPoiRef = useRef(null);
 
   const [poiExpandido, setPoiExpandido] = useState(null);
 
@@ -89,7 +90,12 @@ export default function MapViewer() {
   // Ao carregar workspace com parâmetro ?poi={poiId} na URL (via QR Code / checkpoints)
   useEffect(() => {
     const poiIdUrl = searchParams.get("poi");
-    if (!poiIdUrl || !workspace) return;
+    if (!poiIdUrl) {
+      processedPoiRef.current = null;
+      return;
+    }
+    if (!workspace) return;
+    if (processedPoiRef.current === poiIdUrl) return;
 
     // 1. Encontra o POI escaneado
     const allFeatures = workspace.features?.features || (Array.isArray(workspace.features) ? workspace.features : []);
@@ -98,6 +104,8 @@ export default function MapViewer() {
       return String(id) === String(poiIdUrl);
     });
     if (!poiEscaneado) return;
+
+    processedPoiRef.current = poiIdUrl;
 
     // 2. Abre as informações do ponto escaneado e ativa o bloco
     setPoiSelecionado(poiEscaneado);

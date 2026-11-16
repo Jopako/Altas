@@ -2,7 +2,7 @@
  * useIndoorRoute — Hook para cálculo e suavização de rota indoor no grafo do mapa.
  * Executa Dijkstra e interpolação de caminho sem alterar regras do produto.
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import L from 'leaflet';
 import {
   buildGraph,
@@ -113,12 +113,12 @@ export function useIndoorRoute(mapData, navOrigem, navDestino, somenteAcessivel)
     setRotaErro('');
   }, [navOrigem, navDestino, somenteAcessivel, mapData]);
 
-  const limparRota = () => {
+  const limparRota = useCallback(() => {
     setRotaPontos(null);
     setRotaTexto('');
     setRotaErro('');
     setDistanciaMetros(null);
-  };
+  }, []);
 
   return { rotaPontos, rotaTexto, rotaErro, limparRota, distanciaMetros };
 }
