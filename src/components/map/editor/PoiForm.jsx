@@ -1,6 +1,8 @@
 /**
- * PoiForm — Formulário para edição de ponto de interesse com galeria unificada.
+ * PoiForm — Formulário para edição de ponto de interesse com galeria unificada e geração de QR Code.
  */
+import { useState } from "react";
+import QRCode from "react-qr-code";
 import { inputClasses, labelClasses } from "../../../lib/mapUi";
 import { AccentButton } from "../../ui/AccentButton";
 import { GhostButton } from "../../ui/GhostButton";
@@ -8,6 +10,8 @@ import { GhostButton } from "../../ui/GhostButton";
 export function PoiForm({
   theme,
   selectedLayerKind,
+  selectedBlockId,
+  poiId,
   poiName,
   setPoiName,
   poiTipo,
@@ -18,9 +22,52 @@ export function PoiForm({
   onSave,
   onCancel,
 }) {
+  const [showQrModal, setShowQrModal] = useState(false);
+  const [copied, setCopied] = useState(false);
+
   const inputStyle = inputClasses(theme);
   const labelStyle = labelClasses(theme);
   const isDark = theme === 'dark';
+
+  // Monta a URL de destino do QR Code
+  const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+  const qrUrl = `${baseUrl}/map-viewer?bloco=${encodeURIComponent(selectedBlockId || '')}&poi=${encodeURIComponent(poiId || '')}`;
+
+  // Baixa o QR Code gerado em formato PNG
+  const downloadQrCode = () => {
+    const svg = document.getElementById("poi-qr-code-svg");
+    if (!svg) return;
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    const img = new Image();
+    img.onload = () => {
+      const padding = 24;
+      canvas.width = img.width + padding * 2;
+      canvas.height = img.height + padding * 2;
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, padding, padding);
+      const pngFile = canvas.toDataURL("image/png");
+      const downloadLink = document.createElement("a");
+      const safeName = (poiName || poiId || 'local').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-');
+      downloadLink.download = `qrcode-${safeName}.png`;
+      downloadLink.href = pngFile;
+      downloadLink.click();
+    };
+    img.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgData)));
+  };
+
+  const handleCopyUrl = async () => {
+    try {
+      await navigator.clipboard.writeText(qrUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Fallback
+      setCopied(false);
+    }
+  };
 
   // Remove uma foto inteira (e sua descrição) da lista
   const removeGalleryItem = (index) => {
@@ -116,10 +163,87 @@ export function PoiForm({
         <AccentButton onClick={onSave} className="w-full">
           Salvar ponto de interesse
         </AccentButton>
+
+        <button
+          type="button"
+          onClick={() => setShowQrModal(true)}
+          className={`w-full py-2.5 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-2 border transition-all ${
+            isDark
+              ? 'bg-blue-600/20 border-blue-500/40 text-blue-300 hover:bg-blue-600/30'
+              : 'bg-blue-50 border-blue-300 text-blue-700 hover:bg-blue-100'
+          }`}
+        >
+          Gerar QR Code
+        </button>
+
         <GhostButton theme={theme} onClick={onCancel} className="w-full" size="sm">
           Cancelar
         </GhostButton>
       </div>
+
+      {/* MODAL DO QR CODE */}
+      {showQrModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div
+            className={`w-full max-w-sm rounded-2xl p-6 shadow-2xl border flex flex-col items-center gap-4 ${
+              isDark ? 'bg-[#15233e] border-white/15 text-white' : 'bg-white border-black/10 text-slate-800'
+            }`}
+          >
+            <div className="w-full flex items-center justify-between">
+              <h3 className="font-bold text-base">QR Code do Local</h3>
+              <button
+                type="button"
+                onClick={() => setShowQrModal(false)}
+                className="text-gray-400 hover:text-gray-200 text-lg font-bold p-1"
+              >
+                ✕
+              </button>
+            </div>
+
+            <p className="text-xs text-center text-gray-400">
+              Escaneie para abrir o mapa diretamente em <strong className={isDark ? "text-white" : "text-slate-900"}>{poiName || "este local"}</strong>.
+            </p>
+
+            {/* Container branco para garantir contraste perfeito no scan */}
+            <div className="bg-white p-4 rounded-xl shadow-inner border border-gray-200 flex items-center justify-center">
+              <QRCode
+                id="poi-qr-code-svg"
+                value={qrUrl}
+                size={180}
+                level="M"
+              />
+            </div>
+
+            <div className="w-full text-center">
+              <span className="text-[11px] block truncate px-2 py-1 rounded bg-black/5 dark:bg-white/5 text-gray-400 font-mono">
+                {qrUrl}
+              </span>
+            </div>
+
+            <div className="w-full flex flex-col gap-2 mt-2">
+              <AccentButton onClick={downloadQrCode} className="w-full text-xs">
+                Baixar QR Code (PNG)
+              </AccentButton>
+              
+              <button
+                type="button"
+                onClick={handleCopyUrl}
+                className={`w-full py-2 px-3 rounded-xl text-xs font-semibold border transition-colors ${
+                  isDark
+                    ? 'border-white/15 bg-white/5 hover:bg-white/10 text-white'
+                    : 'border-slate-300 bg-slate-50 hover:bg-slate-100 text-slate-700'
+                }`}
+              >
+                {copied ? '✓ Link copiado!' : 'Copiar Link'}
+              </button>
+
+              <GhostButton theme={theme} onClick={() => setShowQrModal(false)} className="w-full" size="sm">
+                Fechar
+              </GhostButton>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

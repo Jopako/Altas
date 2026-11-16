@@ -124,6 +124,8 @@ export default function MapPoiEditor() {
                 <PoiForm
                   theme={theme}
                   selectedLayerKind={selectedLayerKind}
+                  selectedBlockId={selectedBlockId}
+                  poiId={selectedLayerKey}
                   poiName={poiName}
                   setPoiName={setPoiName}
                   poiTipo={poiTipo}

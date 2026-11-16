@@ -21,7 +21,19 @@ export function useLayerEditor(selectedBlockId) {
     }
     selectedLayerRef.current = layer;
     applySelectedLayerStyle(layer);
-    setSelectedLayerKey(layer.feature?.properties?.id || `layer-${L.stamp(layer)}`);
+
+    if (!layer.feature) {
+      layer.feature = { type: 'Feature', properties: {} };
+    }
+    if (!layer.feature.properties) {
+      layer.feature.properties = {};
+    }
+    if (!layer.feature.properties.id) {
+      layer.feature.properties.id = `f-${Date.now()}`;
+    }
+
+    const currentId = layer.feature.properties.id;
+    setSelectedLayerKey(currentId);
     setSelectedLayerKind(getLayerKind(layer));
     
     const props = layer.feature?.properties || {};

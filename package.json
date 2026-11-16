@@ -18,6 +18,7 @@
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-leaflet": "^5.0.0",
+    "react-qr-code": "^2.2.0",
     "react-router-dom": "^7.18.4",
     "tailwindcss": "^4.3.3",
     "vlibras-player-webjs": "^2.4.2"

@@ -22,6 +22,7 @@ export default function MapViewer() {
   const [theme, setTheme] = useTheme();
 
   const blocoUrl = searchParams.get("bloco");
+  const poiIdUrl = searchParams.get("poi");
   const [blocoAtivo, setBlocoAtivo] = useState(blocoUrl || null);
 
   const [workspace, setWorkspace] = useState(null);
@@ -68,6 +69,38 @@ export default function MapViewer() {
   useEffect(() => {
     setBlocoAtivo(blocoUrl || null);
   }, [blocoUrl]);
+
+  // Ao carregar workspace com parâmetro ?poi={poiId} na URL (via QR Code)
+  useEffect(() => {
+    if (!workspace || !poiIdUrl) return;
+
+    const allFeatures = workspace.features?.features || (Array.isArray(workspace.features) ? workspace.features : []);
+    const feature = allFeatures.find((f) => {
+      const id = f.properties?.id || f.id;
+      return String(id) === String(poiIdUrl);
+    });
+
+    if (feature) {
+      const targetBlock = feature.properties?.blockId || blocoUrl;
+      if (targetBlock) {
+        setBlocoAtivo(targetBlock);
+      }
+      setPoiSelecionado(feature);
+      setPoiExpandido(feature);
+
+      const center = getFeatureCenter(feature);
+      setNavOrigem({
+        id: feature.properties?.id,
+        name: feature.properties?.name || "Local atual",
+        lng: center?.lng,
+        lat: center?.lat,
+        feature,
+      });
+
+      // Muda o alvo ativo para "destino" para que a próxima seleção seja o destino da rota
+      setAlvoAtivo("destino");
+    }
+  }, [workspace, poiIdUrl, blocoUrl]);
 
   useEffect(() => {
     alvoAtivoRef.current = alvoAtivo;
