@@ -16,7 +16,7 @@
 
 - [x] **Etapa 1** — Escala em metros (`useIndoorRoute` + `RoutePanel`)
 - [x] **Etapa 2** — Salvar destino no `sessionStorage` (`MapViewer`)
-- [ ] **Etapa 3** — Fluxo do QR Code / checkpoints (`MapViewer`)
+- [x] **Etapa 3** — Fluxo do QR Code / checkpoints (`MapViewer`)
 - [ ] **Etapa 4** — Teste mobile da navegação por QR
 - [ ] **Etapa 5** — Modelagem de escadas/elevadores (editor + dados)
 - [ ] **Etapa 6** — Grafo com aresta vertical (`buildGraph.js`)
@@ -34,6 +34,9 @@ _(a IA escreve aqui ao fim de cada etapa ou ao parar no meio)_
 
 - **Etapa 2 concluída**:
   - `src/pages/MapViewer.jsx`: Adicionada persistência de `navDestino` no `sessionStorage` (`altas_nav_destino`) via `useEffect` e inicialização de estado restaurando do `sessionStorage`.
+
+- **Etapa 3 concluída**:
+  - `src/pages/MapViewer.jsx`: Implementado fluxo de checkpoints por QR Code. Se não houver destino salvo (Cenário A), define como Origem e abre o painel de rotas focado em Destino; se já houver destino e o QR for o destino, emite alerta de chegada e limpa os dados; se for um QR intermediário (Cenário B), atualiza a origem, preserva o destino e recalcula a rota.
 
 ---
 

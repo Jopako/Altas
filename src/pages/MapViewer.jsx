@@ -86,37 +86,68 @@ export default function MapViewer() {
     setBlocoAtivo(blocoUrl || null);
   }, [blocoUrl]);
 
-  // Ao carregar workspace com parâmetro ?poi={poiId} na URL (via QR Code)
+  // Ao carregar workspace com parâmetro ?poi={poiId} na URL (via QR Code / checkpoints)
   useEffect(() => {
-    if (!workspace || !poiIdUrl) return;
+    const poiIdUrl = searchParams.get("poi");
+    if (!poiIdUrl || !workspace) return;
 
+    // 1. Encontra o POI escaneado
     const allFeatures = workspace.features?.features || (Array.isArray(workspace.features) ? workspace.features : []);
-    const feature = allFeatures.find((f) => {
+    const poiEscaneado = allFeatures.find((f) => {
       const id = f.properties?.id || f.id;
       return String(id) === String(poiIdUrl);
     });
+    if (!poiEscaneado) return;
 
-    if (feature) {
-      const targetBlock = feature.properties?.blockId || blocoUrl;
-      if (targetBlock) {
-        setBlocoAtivo(targetBlock);
-      }
-      setPoiSelecionado(feature);
-      setPoiExpandido(feature);
-
-      const center = getFeatureCenter(feature);
-      setNavOrigem({
-        id: feature.properties?.id,
-        name: feature.properties?.name || "Local atual",
-        lng: center?.lng,
-        lat: center?.lat,
-        feature,
-      });
-
-      // Muda o alvo ativo para "destino" para que a próxima seleção seja o destino da rota
-      setAlvoAtivo("destino");
+    // 2. Abre as informações do ponto escaneado e ativa o bloco
+    setPoiSelecionado(poiEscaneado);
+    setPoiExpandido(poiEscaneado);
+    const targetBlock = poiEscaneado.properties?.blockId || blocoUrl;
+    if (targetBlock) {
+      setBlocoAtivo(targetBlock);
     }
-  }, [workspace, poiIdUrl, blocoUrl]);
+
+    const center = getFeatureCenter(poiEscaneado);
+    const navOrigemObj = {
+      id: poiEscaneado.properties?.id,
+      name: poiEscaneado.properties?.name || "Local atual",
+      lng: center?.lng,
+      lat: center?.lat,
+      feature: poiEscaneado,
+    };
+
+    // 3. Recupera o destino salvo (se existir)
+    const savedDestinoStr = sessionStorage.getItem('altas_nav_destino');
+    let savedDestino = null;
+    try {
+      savedDestino = savedDestinoStr ? JSON.parse(savedDestinoStr) : null;
+    } catch {
+      savedDestino = null;
+    }
+
+    if (!savedDestino) {
+      // CENÁRIO A: Primeiro scan. Define como Origem e abre rota para escolher destino.
+      setNavOrigem(navOrigemObj);
+      setAlvoAtivo("destino");
+      setIsRoutePanelOpen(true);
+    } else {
+      // CENÁRIO B: Já tem um destino, escaneou um QR intermediário ou final.
+      if (String(savedDestino.id) === String(poiEscaneado.properties?.id)) {
+        // ELE CHEGOU!
+        alert(`🎉 Você chegou ao seu destino: ${poiEscaneado.properties?.name || "Destino"}!`);
+        setNavDestino(null);
+        setNavOrigem(null);
+        sessionStorage.removeItem('altas_nav_destino');
+        limparRota();
+      } else {
+        // Checkpoint no meio do caminho. Atualiza a origem e mantém o destino.
+        setNavDestino(savedDestino);
+        setNavOrigem(navOrigemObj);
+        setAlvoAtivo("destino");
+        setIsRoutePanelOpen(true);
+      }
+    }
+  }, [workspace, searchParams, blocoUrl, limparRota]);
 
   useEffect(() => {
     alvoAtivoRef.current = alvoAtivo;
