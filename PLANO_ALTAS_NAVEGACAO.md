@@ -15,7 +15,7 @@
 ## 📊 PROGRESSO
 
 - [x] **Etapa 1** — Escala em metros (`useIndoorRoute` + `RoutePanel`)
-- [ ] **Etapa 2** — Salvar destino no `sessionStorage` (`MapViewer`)
+- [x] **Etapa 2** — Salvar destino no `sessionStorage` (`MapViewer`)
 - [ ] **Etapa 3** — Fluxo do QR Code / checkpoints (`MapViewer`)
 - [ ] **Etapa 4** — Teste mobile da navegação por QR
 - [ ] **Etapa 5** — Modelagem de escadas/elevadores (editor + dados)
@@ -31,6 +31,9 @@ _(a IA escreve aqui ao fim de cada etapa ou ao parar no meio)_
   - `src/hooks/useIndoorRoute.js`: Adicionada constante `ESCALA_METROS = 0.1`, cálculo de `distanciaMetros`, inclusão da distância no texto e retorno de `distanciaMetros`.
   - `src/components/map/RoutePanel.jsx`: Adicionado suporte a `distanciaMetros` nas props e exibição da distância estimada em metros.
   - `src/pages/MapViewer.jsx`: Passada a prop `distanciaMetros` do hook para o componente `RoutePanel`.
+
+- **Etapa 2 concluída**:
+  - `src/pages/MapViewer.jsx`: Adicionada persistência de `navDestino` no `sessionStorage` (`altas_nav_destino`) via `useEffect` e inicialização de estado restaurando do `sessionStorage`.
 
 ---
 

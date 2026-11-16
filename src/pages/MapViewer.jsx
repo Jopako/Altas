@@ -31,9 +31,25 @@ export default function MapViewer() {
 
   const [poiSelecionado, setPoiSelecionado] = useState(null);
   const [navOrigem, setNavOrigem] = useState(null);
-  const [navDestino, setNavDestino] = useState(null);
+  const [navDestino, setNavDestino] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem('altas_nav_destino');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
   const [alvoAtivo, setAlvoAtivo] = useState("origem");
   const [isRoutePanelOpen, setIsRoutePanelOpen] = useState(false);
+
+  // Sincroniza navDestino com sessionStorage para preservar em navegação/recarregamento
+  useEffect(() => {
+    if (navDestino) {
+      sessionStorage.setItem('altas_nav_destino', JSON.stringify(navDestino));
+    } else {
+      sessionStorage.removeItem('altas_nav_destino');
+    }
+  }, [navDestino]);
 
   const alvoAtivoRef = useRef("origem");
   const handlePoiClickRef = useRef(null);
