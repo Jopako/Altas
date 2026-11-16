@@ -1,6 +1,5 @@
 import axios from 'axios';
-
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:3000';
+import { API_BASE } from './apiConfig';
 let current = null; // { audio, url }
 let gen = 0; // invalida requisições em andamento
 

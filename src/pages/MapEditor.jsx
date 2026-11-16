@@ -7,6 +7,7 @@ import { PageLayout, PageHeader, PageFooter } from '../components/PageLayout';
 import { useTheme } from '../hooks/useTheme';
 import { AuthBackground } from '../components/AuthBackground';
 import { loadMyWorkspace, saveMyWorkspace, uploadBlockImage } from '../lib/workspacesStorage';
+import { API_BASE } from '../lib/apiConfig';
 import { inputClasses, labelClasses } from '../lib/mapUi';
 import { MapCard } from '../components/ui/MapCard';
 import { EmptyState } from '../components/ui/EmptyState';
@@ -63,7 +64,6 @@ export default function MapEditor() {
       const uploadRes = await uploadBlockImage(selectedFile);
       const imageUrl = uploadRes.imageUrl || uploadRes.url; 
 
-      const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:3000';
       const fullImageUrl = imageUrl.startsWith('http') ? imageUrl : `${API_BASE}${imageUrl}`;
 
       const img = new Image();

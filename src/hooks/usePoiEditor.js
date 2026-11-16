@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { loadMyWorkspace, uploadBlockImage } from "../lib/workspacesStorage";
+import { API_BASE } from "../lib/apiConfig";
 import { useLayerEditor } from "./poiEditor/useLayerEditor";
 import { useDrawingTools } from "./poiEditor/useDrawingTools";
 import { useBlockMover } from "./poiEditor/useBlockMover";
@@ -46,7 +47,6 @@ export function usePoiEditor(setMapData) {
       const uploadRes = await uploadBlockImage(file);
       const imageUrl = uploadRes.imageUrl || uploadRes.url;
       
-      const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:3000';
       const fullImageUrl = imageUrl.startsWith('http') ? imageUrl : `${API_BASE}${imageUrl}`;
 
       layerEditor.setPoiGallery((prev) => [...prev, { photo: fullImageUrl, description: '' }]);

@@ -2,9 +2,7 @@
 - workspacesStorage.js — Comunicação com a API de Workspace.
  */
 import axios from 'axios';
-
-const API_BASE =
-  import.meta.env.VITE_API_BASE || `http://${window.location.hostname}:3000`;
+import { API_BASE } from './apiConfig';
 
 const api = axios.create({
   baseURL: API_BASE,

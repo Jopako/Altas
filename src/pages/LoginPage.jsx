@@ -5,6 +5,7 @@ import LoginPlaceholder from "../assets/imgs/login-placeholder.svg";
 import { PageHeader, PageLayout } from "../components/PageLayout";
 import { useTheme } from "../hooks/useTheme";
 import { AuthBackground } from "../components/AuthBackground";
+import { API_BASE } from "../lib/apiConfig";
 
 const LoginPage = () => {
   const [searchParams] = useSearchParams();
@@ -21,8 +22,7 @@ const LoginPage = () => {
   }, [searchParams]);
 
   function handleMicrosoftLogin() {
-    const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-    window.location.href = `${apiBase}/api/auth/microsoft`;
+    window.location.href = `${API_BASE}/api/auth/microsoft`;
   }
 
   return (

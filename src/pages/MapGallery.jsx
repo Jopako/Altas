@@ -7,8 +7,7 @@ import { PageFooter } from "../components/layout/PageFooter";
 import { MapCard } from "../components/ui/MapCard";
 import { EmptyState } from "../components/ui/EmptyState";
 import { useTheme } from "../hooks/useTheme";
-
-const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:3000";
+import { API_BASE } from "../lib/apiConfig";
 
 export function MapGallery() {
   const navigate = useNavigate();

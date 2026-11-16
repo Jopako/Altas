@@ -1,6 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import axios from 'axios'
+import { API_BASE } from './lib/apiConfig'
 import './index.css'
 import App from './App.jsx'
 
@@ -9,10 +10,8 @@ axios.interceptors.response.use((response) => {
   if (response.data && typeof response.data === "object") {
     const raw = JSON.stringify(response.data);
     if (raw.includes("http://localhost:3000")) {
-      const currentApi =
-        import.meta.env.VITE_API_BASE || `http://${window.location.hostname}:3000`;
       response.data = JSON.parse(
-        raw.replaceAll("http://localhost:3000", currentApi)
+        raw.replaceAll("http://localhost:3000", API_BASE)
       );
     }
   }
