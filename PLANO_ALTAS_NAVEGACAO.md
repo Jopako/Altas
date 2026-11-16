@@ -20,7 +20,7 @@
 - [x] **Etapa 4** — Teste mobile da navegação por QR
 - [x] **Etapa 5** — Modelagem de escadas/elevadores (editor + dados)
 - [x] **Etapa 6** — Grafo com aresta vertical (`buildGraph.js`)
-- [ ] **Etapa 7** — Rota partida em segmentos + `RoutePanel` + visual por andar
+- [x] **Etapa 7** — Rota partida em segmentos + `RoutePanel` + visual por andar
 - [ ] **Etapa 8** — QR na escada (troca automática de andar)
 - [ ] **Etapa 9** — Testes finais multi-piso
 
@@ -49,6 +49,12 @@ _(a IA escreve aqui ao fim de cada etapa ou ao parar no meio)_
 - **Etapa 6 concluída**:
   - `src/lib/graph/graphUtils.js`: Atualizada função `addEdge` para suportar metadados adicionais na aresta (ex: `tipo: "vertical"`).
   - `src/lib/graph/buildGraph.js`: Suporte a nós do tipo `Point` no grafo e geração de arestas verticais bidirecionais com peso 50 e identificador `tipo: "vertical"` entre features vinculadas por `conectaPara`. Testado com sucesso via Dijkstra entre diferentes andares.
+
+- **Etapa 7 concluída**:
+  - `src/hooks/useIndoorRoute.js`: Adicionada detecção de arestas verticais e quebra da rota em segmentos (`rotaSegmentos`), enriquecimento de `transicoesVerticais` com coordenadas e blocos, e geração de texto multi-etapa (ex: *"Vá até a escada (15m). Suba para o Andar Superior. Siga por mais 20m até a sala"*).
+  - `src/components/map/viewer/MapRoute.jsx` e `src/components/map/ViewerMap.jsx`: Exibição do segmento correspondente ao `blocoAtivo` e destaque visual na escada de saída; na visão global, renderiza segmentos independentes sem traço contínuo direto.
+  - `src/components/map/RoutePanel.jsx`: Visualização das instruções multi-piso com divisão por trechos e suporte à reprodução por voz (TTS).
+  - `src/pages/MapViewer.jsx`: Conectadas as novas props `rotaSegmentos` e `transicoesVerticais`.
 
 ---
 

@@ -58,7 +58,15 @@ export default function MapViewer() {
 
   const [poiExpandido, setPoiExpandido] = useState(null);
 
-  const { rotaPontos, rotaTexto, rotaErro, limparRota, distanciaMetros } = useIndoorRoute(
+  const {
+    rotaPontos,
+    rotaSegmentos,
+    transicoesVerticais,
+    rotaTexto,
+    rotaErro,
+    limparRota,
+    distanciaMetros,
+  } = useIndoorRoute(
     workspace,
     navOrigem,
     navDestino
@@ -286,6 +294,8 @@ export default function MapViewer() {
             navOrigem={navOrigem}
             navDestino={navDestino}
             rotaPontos={rotaPontos}
+            rotaSegmentos={rotaSegmentos}
+            transicoesVerticais={transicoesVerticais}
             poiLayersRef={poiLayersRef}
             handlePoiClickRef={handlePoiClickRef}
             poiSelecionado={poiSelecionado}
@@ -344,10 +354,18 @@ export default function MapViewer() {
                 setNavDestino={setNavDestino}
                 setPoiSelecionado={setPoiSelecionado}
                 rotaPontos={rotaPontos}
+                rotaSegmentos={rotaSegmentos}
+                transicoesVerticais={transicoesVerticais}
                 rotaErro={rotaErro}
                 rotaTexto={rotaTexto}
                 distanciaMetros={distanciaMetros}
-                onOuvirRota={() => alert("Audiodescrição da rota: " + (rotaTexto || ""))}
+                onOuvirRota={async () => {
+                  try {
+                    await playTextToSpeech(rotaTexto);
+                  } catch {
+                    alert("Audiodescrição da rota: " + (rotaTexto || ""));
+                  }
+                }}
                 onLimpar={handleResetRoute}
                 isOpen={isRoutePanelOpen}
                 setIsOpen={setIsRoutePanelOpen}

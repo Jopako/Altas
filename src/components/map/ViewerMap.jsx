@@ -20,11 +20,41 @@ export function ViewerMap({
   theme, workspace, blocoAtivo, onBlocoClick,
   corredores, areas, pontos,
   navOrigem, navDestino, rotaPontos,
+  rotaSegmentos = [], transicoesVerticais = [],
   poiLayersRef, handlePoiClickRef, poiSelecionado, isRoutePanelOpen,
 }) {
   const blockMeta = workspace?.blockMeta || {};
   const workspaceBounds = computeWorkspaceBounds(blockMeta);
-  const { rotaAjustada, finalPinoOrigem, finalPinoDestino } = processRouteForDisplay(rotaPontos, navOrigem, navDestino);
+
+  // Lógica multi-piso: isolar segmento correspondente ao andar ativo
+  let pontosExibicao = rotaPontos;
+  let segmentosIndependentes = null;
+  let escadaHighlight = null;
+
+  if (rotaSegmentos && rotaSegmentos.length > 1) {
+    if (blocoAtivo) {
+      // Procura o segmento pertencente a este bloco
+      const segAtivo = rotaSegmentos.find((s) => s.blockId === blocoAtivo);
+      pontosExibicao = segAtivo ? segAtivo.pontos : null;
+
+      // Destaca a escada que leva ao próximo piso se estiver saindo deste andar
+      const transSaindo = transicoesVerticais?.find((t) => t.fromBlockId === blocoAtivo);
+      if (transSaindo?.fromCoord) {
+        escadaHighlight = transSaindo.fromCoord;
+      }
+    } else {
+      // Visão global: renderiza segmentos separados (sem traçar linha reta unindo andares distintos)
+      segmentosIndependentes = rotaSegmentos;
+      pontosExibicao = null;
+    }
+  }
+
+  const { rotaAjustada, finalPinoOrigem, finalPinoDestino } = processRouteForDisplay(
+    pontosExibicao,
+    navOrigem,
+    navDestino
+  );
+
   const poiProps = { navOrigem, navDestino, handlePoiClickRef, poiLayersRef };
 
   return (
@@ -50,7 +80,13 @@ export function ViewerMap({
         <MapCorridors corredores={filterByBlock(corredores, blocoAtivo)} />
         <MapAreas areas={filterByBlock(areas, blocoAtivo)} {...poiProps} />
         <MapPoints pontos={filterByBlock(pontos, blocoAtivo)} {...poiProps} />
-        <MapRoute rotaAjustada={rotaAjustada} finalPinoOrigem={finalPinoOrigem} finalPinoDestino={finalPinoDestino} />
+        <MapRoute
+          rotaAjustada={rotaAjustada}
+          segmentosIndependentes={segmentosIndependentes}
+          finalPinoOrigem={blocoAtivo && navOrigem?.feature?.properties?.blockId && navOrigem.feature.properties.blockId !== blocoAtivo ? null : finalPinoOrigem}
+          finalPinoDestino={blocoAtivo && navDestino?.feature?.properties?.blockId && navDestino.feature.properties.blockId !== blocoAtivo ? null : finalPinoDestino}
+          escadaHighlight={escadaHighlight}
+        />
       </MapContainer>
     </div>
   );

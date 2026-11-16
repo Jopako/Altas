@@ -18,6 +18,8 @@ export function RoutePanel({
   setNavDestino,
   setPoiSelecionado,
   rotaPontos,
+  rotaSegmentos = [],
+  transicoesVerticais = [],
   rotaErro,
   rotaTexto,
   distanciaMetros,
@@ -153,22 +155,42 @@ export function RoutePanel({
         {rotaErro && <p className="text-xs text-[#EF4444] font-medium">{rotaErro}</p>}
         
         {rotaTexto && !rotaErro && (
-          <div>
-            <p className="text-xs text-[#3B82F6] font-medium flex items-center gap-1.5">
-              <SuccessIcon className="h-4 w-4 text-[#3B82F6] shrink-0" />
-              <span>{rotaTexto}</span>
-            </p>
+          <div className="flex flex-col gap-2">
+            <div className={`p-3 rounded-xl border ${
+              isDark ? 'bg-blue-500/10 border-blue-500/30' : 'bg-blue-50 border-blue-200'
+            }`}>
+              <p className="text-xs text-[#3B82F6] font-medium flex items-start gap-1.5 leading-relaxed">
+                <SuccessIcon className="h-4 w-4 text-[#3B82F6] shrink-0 mt-0.5" />
+                <span>{rotaTexto}</span>
+              </p>
+
+              {transicoesVerticais.length > 0 && (
+                <div className="mt-2.5 pt-2.5 border-t border-blue-500/20 flex flex-col gap-1.5 text-[11px]">
+                  <span className="font-bold opacity-80 flex items-center gap-1">
+                    🪜 Rota Multi-piso:
+                  </span>
+                  {rotaSegmentos.map((seg, idx) => (
+                    <div key={seg.id || idx} className="flex items-center justify-between opacity-90 pl-2 border-l-2 border-blue-400">
+                      <span>Trecho {idx + 1} {seg.blockId ? `(${seg.blockId})` : ''}</span>
+                      <span className="font-semibold">~{Math.round(seg.distanciaMetros)}m</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             {distanciaMetros != null && (
-              <p className={`text-[11px] font-semibold mt-1 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>
-                Distância estimada: ~{Math.round(distanciaMetros)} metros
+              <p className={`text-[11px] font-semibold ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>
+                Distância total estimada: ~{Math.round(distanciaMetros)} metros
               </p>
             )}
+
             <AccentButton
               onClick={onOuvirRota}
-              className="mt-2 w-full"
+              className="w-full"
               size="sm"
             >
-              <SpeakIcon className="h-4 w-4 shrink-0" /> Ouvir
+              <SpeakIcon className="h-4 w-4 shrink-0" /> Ouvir Instruções
             </AccentButton>
           </div>
         )}
