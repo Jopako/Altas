@@ -20,6 +20,7 @@ export function RoutePanel({
   rotaPontos,
   rotaErro,
   rotaTexto,
+  distanciaMetros,
   onOuvirRota,
   onLimpar,
   isOpen,     
@@ -157,6 +158,11 @@ export function RoutePanel({
               <SuccessIcon className="h-4 w-4 text-[#3B82F6] shrink-0" />
               <span>{rotaTexto}</span>
             </p>
+            {distanciaMetros != null && (
+              <p className={`text-[11px] font-semibold mt-1 ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>
+                Distância estimada: ~{Math.round(distanciaMetros)} metros
+              </p>
+            )}
             <AccentButton
               onClick={onOuvirRota}
               className="mt-2 w-full"

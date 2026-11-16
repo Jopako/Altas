@@ -12,16 +12,20 @@ import {
   toPoint,
 } from '../lib/graph';
 
+const ESCALA_METROS = 0.1;
+
 export function useIndoorRoute(mapData, navOrigem, navDestino, somenteAcessivel) {
   const [rotaPontos, setRotaPontos] = useState(null);
   const [rotaTexto, setRotaTexto] = useState('');
   const [rotaErro, setRotaErro] = useState('');
+  const [distanciaMetros, setDistanciaMetros] = useState(null);
 
   useEffect(() => {
     if (!mapData?.features || !navOrigem || !navDestino) {
       setRotaPontos(null);
       setRotaTexto('');
       setRotaErro('');
+      setDistanciaMetros(null);
       return;
     }
 
@@ -29,6 +33,7 @@ export function useIndoorRoute(mapData, navOrigem, navDestino, somenteAcessivel)
       setRotaPontos(null);
       setRotaTexto('');
       setRotaErro('Origem e destino são o mesmo local.');
+      setDistanciaMetros(null);
       return;
     }
 
@@ -36,6 +41,7 @@ export function useIndoorRoute(mapData, navOrigem, navDestino, somenteAcessivel)
       setRotaPontos(null);
       setRotaTexto('');
       setRotaErro('');
+      setDistanciaMetros(null);
       return;
     }
 
@@ -45,6 +51,7 @@ export function useIndoorRoute(mapData, navOrigem, navDestino, somenteAcessivel)
       setRotaPontos(null);
       setRotaTexto('');
       setRotaErro('Nenhum corredor foi desenhado neste mapa ainda.');
+      setDistanciaMetros(null);
       return;
     }
 
@@ -59,6 +66,7 @@ export function useIndoorRoute(mapData, navOrigem, navDestino, somenteAcessivel)
       setRotaPontos(null);
       setRotaTexto('');
       setRotaErro('Não foi possível localizar origem ou destino no grafo.');
+      setDistanciaMetros(null);
       return;
     }
 
@@ -72,8 +80,12 @@ export function useIndoorRoute(mapData, navOrigem, navDestino, somenteAcessivel)
           ? 'Não há rota acessível entre esses pontos.'
           : 'Não foi possível calcular uma rota entre esses pontos.'
       );
+      setDistanciaMetros(null);
       return;
     }
+
+    const distCalculada = resultado.distancia * ESCALA_METROS;
+    setDistanciaMetros(distCalculada);
 
     const origemPonto = { x: navOrigem.lng, y: navOrigem.lat };
     const destinoPonto = { x: navDestino.lng, y: navDestino.lat };
@@ -97,7 +109,7 @@ export function useIndoorRoute(mapData, navOrigem, navDestino, somenteAcessivel)
 
     const latlngs = pontosFinais.map((p) => L.latLng(p.y, p.x));
     setRotaPontos(latlngs);
-    setRotaTexto(`Rota de "${navOrigem.name}" até "${navDestino.name}" traçada no mapa.`);
+    setRotaTexto(`Rota de "${navOrigem.name}" até "${navDestino.name}" traçada no mapa (~${Math.round(distCalculada)} metros).`);
     setRotaErro('');
   }, [navOrigem, navDestino, somenteAcessivel, mapData]);
 
@@ -105,7 +117,8 @@ export function useIndoorRoute(mapData, navOrigem, navDestino, somenteAcessivel)
     setRotaPontos(null);
     setRotaTexto('');
     setRotaErro('');
+    setDistanciaMetros(null);
   };
 
-  return { rotaPontos, rotaTexto, rotaErro, limparRota };
+  return { rotaPontos, rotaTexto, rotaErro, limparRota, distanciaMetros };
 }

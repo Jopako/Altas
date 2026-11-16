@@ -41,7 +41,7 @@ export default function MapViewer() {
 
   const [poiExpandido, setPoiExpandido] = useState(null);
 
-  const { rotaPontos, rotaTexto, rotaErro, limparRota } = useIndoorRoute(
+  const { rotaPontos, rotaTexto, rotaErro, limparRota, distanciaMetros } = useIndoorRoute(
     workspace,
     navOrigem,
     navDestino
@@ -291,6 +291,7 @@ export default function MapViewer() {
                 rotaPontos={rotaPontos}
                 rotaErro={rotaErro}
                 rotaTexto={rotaTexto}
+                distanciaMetros={distanciaMetros}
                 onOuvirRota={() => alert("Audiodescrição da rota: " + (rotaTexto || ""))}
                 onLimpar={handleResetRoute}
                 isOpen={isRoutePanelOpen}
