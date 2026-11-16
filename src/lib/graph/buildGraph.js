@@ -6,7 +6,31 @@ import { densifyLine, keyOf } from './geoMath.js';
 import { addEdge } from './graphUtils.js';
 
 const DENSIFY_STEP = 15;
-const SEW_DIST = 25;
+const SEW_DIST = 10;
+
+function distToSegment(px, py, x1, y1, x2, y2) {
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  const lenSq = dx * dx + dy * dy;
+  if (lenSq === 0) return Math.hypot(px - x1, py - y1);
+  let t = ((px - x1) * dx + (py - y1) * dy) / lenSq;
+  t = Math.max(0, Math.min(1, t));
+  return Math.hypot(px - (x1 + t * dx), py - (y1 + t * dy));
+}
+
+function distToPoiBoundary(px, py, poi) {
+  if (!poi.ring || poi.ring.length < 2) {
+    return Math.hypot(px - poi.x, py - poi.y);
+  }
+  let minD = Infinity;
+  for (let i = 0; i < poi.ring.length - 1; i++) {
+    const [x1, y1] = poi.ring[i];
+    const [x2, y2] = poi.ring[i + 1];
+    const d = distToSegment(px, py, x1, y1, x2, y2);
+    if (d < minD) minD = d;
+  }
+  return minD;
+}
 
 export function buildGraph(featureCollection) {
   const features = Array.isArray(featureCollection)
@@ -68,7 +92,7 @@ export function buildGraph(featureCollection) {
     for (const [x, y] of dense) {
       const key = keyOf({ x, y });
       if (!graph[key]) graph[key] = [];
-      chain.push({ x, y, key, corridorId: cIdx }); 
+      chain.push({ x, y, key, corridorId: cIdx });
     }
     for (let i = 0; i < chain.length - 1; i++) {
       const a = chain[i];
@@ -96,7 +120,7 @@ export function buildGraph(featureCollection) {
     }
   }
 
-  // 3. Conecta salas/POIs aos eixos mais próximos
+  // 3. Conecta salas/POIs ao nó de corredor mais próximo da borda do polígono
   const roomCenterKey = new Map();
   for (const poi of pois) {
     const centerKey = keyOf({ x: poi.x, y: poi.y });
@@ -106,33 +130,26 @@ export function buildGraph(featureCollection) {
 
     if (corridorNodes.length === 0) continue;
 
-    // Agrupa o nó mais próximo de cada corredor DIFERENTE
-    const closestPerCorridor = new Map();
-    
+    let bestNode = null;
+    let bestBoundaryDist = Infinity;
+
     for (const p of corridorNodes) {
-      const cId = p.corridorId ?? 0;
-      const d = Math.hypot(p.x - poi.x, p.y - poi.y);
-      const existing = closestPerCorridor.get(cId);
-      if (!existing || d < existing.d) {
-        closestPerCorridor.set(cId, { p, d });
+      const boundaryDist = distToPoiBoundary(p.x, p.y, poi);
+      if (boundaryDist < bestBoundaryDist) {
+        bestBoundaryDist = boundaryDist;
+        bestNode = p;
       }
     }
 
-    const sortedCorridors = Array.from(closestPerCorridor.values()).sort((a, b) => a.d - b.d);
-
-    let connections = 0;
-    for (const item of sortedCorridors) {
-      if (item.d < 150) {
-        addEdge(graph, centerKey, item.p.key, item.d, poi.acessivel);
-        addEdge(graph, item.p.key, centerKey, item.d, poi.acessivel);
-        connections++;
-        if (connections >= 2) break;
-      }
+    if (bestNode && bestBoundaryDist < 150) {
+      const centerDist = Math.hypot(bestNode.x - poi.x, bestNode.y - poi.y);
+      addEdge(graph, centerKey, bestNode.key, centerDist, poi.acessivel);
+      addEdge(graph, bestNode.key, centerKey, centerDist, poi.acessivel);
     }
   }
 
   // 4. Arestas Verticais (Multi-piso: escadas e elevadores via conectaPara)
-  const PESO_ARESTA_VERTICAL = 50; // Tempo / esforço para subir/descer andar
+  const PESO_ARESTA_VERTICAL = 50;
   for (const poi of pois) {
     if (!poi.conectaPara) continue;
     const target = pois.find(

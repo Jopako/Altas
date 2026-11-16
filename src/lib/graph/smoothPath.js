@@ -1,7 +1,7 @@
 /**
  * smoothPath.js — suaviza o caminho evitando paredes e mantendo-se perto do eixo.
  */
-import { keyOf, toPoint, pointInPolygon, segmentsProperlyIntersect } from './geoMath.js';
+import { keyOf, toPoint, segmentsProperlyIntersect } from './geoMath.js';
 
 function crossesAnyWall(a, b, rooms) {
   if (!rooms?.length) return false;
@@ -33,42 +33,30 @@ function segmentStaysNearAxis(a, b, corridorNodes, maxDist) {
 }
 
 export function smoothPath(caminho, rooms, corridorNodes = [], maxDistFromAxis = 40) {
-  if (!caminho || caminho.length <= 2) return caminho || [];
+  if (!caminho || caminho.length <= 3) return caminho || [];
 
-  const points = caminho.map(k => toPoint(k));
-  const result = [points[0]];
+  const points = caminho.map((k) => toPoint(k));
+  const first = points[0];
+  const last = points[points.length - 1];
+
+  const inner = points.slice(1, -1);
+  const smoothedInner = [inner[0]];
   let i = 0;
 
-  while (i < points.length - 1) {
-    let j = points.length - 1;
+  while (i < inner.length - 1) {
+    let j = inner.length - 1;
     for (; j > i + 1; j--) {
-      const a = points[i];
-      const b = points[j];
+      const a = inner[i];
+      const b = inner[j];
 
       if (crossesAnyWall(a, b, rooms)) continue;
-
-      const aInRoom = isPointInsideAnyRoom(a, rooms);
-      const bInRoom = isPointInsideAnyRoom(b, rooms);
-      const isRoomTransition = aInRoom || bInRoom;
-
-      if (!isRoomTransition && !segmentStaysNearAxis(a, b, corridorNodes, maxDistFromAxis)) {
-        continue;
-      }
+      if (!segmentStaysNearAxis(a, b, corridorNodes, maxDistFromAxis)) continue;
 
       break;
     }
-    result.push(points[j]);
+    smoothedInner.push(inner[j]);
     i = j;
   }
 
-  return result.map(p => keyOf(p));
-}
-
-function isPointInsideAnyRoom(p, rooms) {
-  if (!rooms?.length) return false;
-  for (const r of rooms) {
-    const ring = r.ring || r;
-    if (pointInPolygon(p.x, p.y, ring)) return true;
-  }
-  return false;
+  return [first, ...smoothedInner, last].map((p) => keyOf(p));
 }
