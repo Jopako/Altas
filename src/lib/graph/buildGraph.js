@@ -1,5 +1,6 @@
 /**
  * buildGraph.js — constrói o grafo de navegação a partir do FeatureCollection.
+ * Suporta corredores (LineString), salas (Polygon), pontos (Point) e conexões verticais (conectaPara).
  */
 import { densifyLine, keyOf } from './geoMath.js';
 import { addEdge } from './graphUtils.js';
@@ -13,7 +14,7 @@ export function buildGraph(featureCollection) {
     : featureCollection?.features || [];
 
   const corridors = []; // { coords, acessivel }
-  const rooms = [];     // { id, ring, acessivel }
+  const pois = [];      // { id, name, tipo, conectaPara, x, y, acessivel, ring }
 
   for (const f of features) {
     const geom = f?.geometry;
@@ -27,9 +28,30 @@ export function buildGraph(featureCollection) {
         acessivel: props.acessivel !== false,
       });
     } else if (geom.type === 'Polygon' && !isCorridor) {
-      rooms.push({
+      const pts = geom.coordinates[0]?.slice(0, -1) || [];
+      if (pts.length > 0) {
+        const cx = pts.reduce((s, p) => s + p[0], 0) / pts.length;
+        const cy = pts.reduce((s, p) => s + p[1], 0) / pts.length;
+        pois.push({
+          id: props.id,
+          name: props.name,
+          tipo: props.tipo,
+          conectaPara: props.conectaPara,
+          x: cx,
+          y: cy,
+          acessivel: props.acessivel !== false,
+          ring: geom.coordinates[0],
+        });
+      }
+    } else if (geom.type === 'Point') {
+      const [px, py] = geom.coordinates;
+      pois.push({
         id: props.id,
-        ring: geom.coordinates[0],
+        name: props.name,
+        tipo: props.tipo,
+        conectaPara: props.conectaPara,
+        x: px,
+        y: py,
         acessivel: props.acessivel !== false,
       });
     }
@@ -46,7 +68,6 @@ export function buildGraph(featureCollection) {
     for (const [x, y] of dense) {
       const key = keyOf({ x, y });
       if (!graph[key]) graph[key] = [];
-      // Adiciona o ID do corredor no nó
       chain.push({ x, y, key, corridorId: cIdx }); 
     }
     for (let i = 0; i < chain.length - 1; i++) {
@@ -66,7 +87,7 @@ export function buildGraph(featureCollection) {
       const b = corridorNodes[j];
       const d = Math.hypot(a.x - b.x, a.y - b.y);
       if (d > 0 && d <= SEW_DIST) {
-        const jaTem = graph[a.key]?.some(e => e.to === b.key);
+        const jaTem = graph[a.key]?.some((e) => e.to === b.key);
         if (!jaTem) {
           addEdge(graph, a.key, b.key, d, true);
           addEdge(graph, b.key, a.key, d, true);
@@ -75,41 +96,64 @@ export function buildGraph(featureCollection) {
     }
   }
 
-  // 3. Conecta salas aos eixos mais próximos (MÁGICA DA TRAVESSIA AQUI)
+  // 3. Conecta salas/POIs aos eixos mais próximos
   const roomCenterKey = new Map();
-  for (const r of rooms) {
-    const pts = r.ring.slice(0, -1);
-    const cx = pts.reduce((s, p) => s + p[0], 0) / pts.length;
-    const cy = pts.reduce((s, p) => s + p[1], 0) / pts.length;
-    const centerKey = keyOf({ x: cx, y: cy });
+  for (const poi of pois) {
+    const centerKey = keyOf({ x: poi.x, y: poi.y });
     if (!graph[centerKey]) graph[centerKey] = [];
-    roomCenterKey.set(r.id, centerKey);
+    if (poi.id) roomCenterKey.set(poi.id, centerKey);
+    poi.nodeKey = centerKey;
+
+    if (corridorNodes.length === 0) continue;
 
     // Agrupa o nó mais próximo de cada corredor DIFERENTE
-    const closestPerCorridor = new Map(); // corridorId -> { p, d }
+    const closestPerCorridor = new Map();
     
     for (const p of corridorNodes) {
-      const cId = p.corridorId ?? 0; // Fallback pra segurança
-      const d = Math.hypot(p.x - cx, p.y - cy);
+      const cId = p.corridorId ?? 0;
+      const d = Math.hypot(p.x - poi.x, p.y - poi.y);
       const existing = closestPerCorridor.get(cId);
       if (!existing || d < existing.d) {
         closestPerCorridor.set(cId, { p, d });
       }
     }
 
-    // Ordena do mais próximo pro mais longe
     const sortedCorridors = Array.from(closestPerCorridor.values()).sort((a, b) => a.d - b.d);
 
     let connections = 0;
     for (const item of sortedCorridors) {
-      // Só conecta se o corredor estiver a uma distância razoável (ex: 150)
       if (item.d < 150) {
-        addEdge(graph, centerKey, item.p.key, item.d, r.acessivel);
-        addEdge(graph, item.p.key, centerKey, item.d, r.acessivel);
+        addEdge(graph, centerKey, item.p.key, item.d, poi.acessivel);
+        addEdge(graph, item.p.key, centerKey, item.d, poi.acessivel);
         connections++;
-        if (connections >= 2) break; // Conecta no máximo aos 2 corredores mais próximos
+        if (connections >= 2) break;
       }
     }
+  }
+
+  // 4. Arestas Verticais (Multi-piso: escadas e elevadores via conectaPara)
+  const PESO_ARESTA_VERTICAL = 50; // Tempo / esforço para subir/descer andar
+  for (const poi of pois) {
+    if (!poi.conectaPara) continue;
+    const target = pois.find(
+      (p) => p.id === poi.conectaPara || (p.name && p.name.trim() === poi.conectaPara.trim())
+    );
+    if (!target) continue;
+
+    const uKey = poi.nodeKey;
+    const vKey = target.nodeKey;
+    const ehAcessivel = poi.acessivel && target.acessivel && poi.tipo !== 'escada';
+
+    addEdge(graph, uKey, vKey, PESO_ARESTA_VERTICAL, ehAcessivel, {
+      tipo: 'vertical',
+      fromId: poi.id,
+      toId: target.id,
+    });
+    addEdge(graph, vKey, uKey, PESO_ARESTA_VERTICAL, ehAcessivel, {
+      tipo: 'vertical',
+      fromId: target.id,
+      toId: poi.id,
+    });
   }
 
   return {

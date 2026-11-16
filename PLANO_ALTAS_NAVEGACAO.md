@@ -19,7 +19,7 @@
 - [x] **Etapa 3** — Fluxo do QR Code / checkpoints (`MapViewer`)
 - [x] **Etapa 4** — Teste mobile da navegação por QR
 - [x] **Etapa 5** — Modelagem de escadas/elevadores (editor + dados)
-- [ ] **Etapa 6** — Grafo com aresta vertical (`buildGraph.js`)
+- [x] **Etapa 6** — Grafo com aresta vertical (`buildGraph.js`)
 - [ ] **Etapa 7** — Rota partida em segmentos + `RoutePanel` + visual por andar
 - [ ] **Etapa 8** — QR na escada (troca automática de andar)
 - [ ] **Etapa 9** — Testes finais multi-piso
@@ -45,6 +45,10 @@ _(a IA escreve aqui ao fim de cada etapa ou ao parar no meio)_
   - `src/components/map/editor/PoiForm.jsx`: Habilitada seleção de tipo (`escada`, `elevador`, `sala`, etc.) para qualquer geometria (ponto ou área). Adicionado campo de conexão multi-piso `conectaPara` com datalist de pontos cadastrados. Preservada a configuração de `VITE_PUBLIC_FRONTEND_URL`.
   - `src/hooks/poiEditor/useLayerEditor.js`: Adicionados estados e persistência de `poiConectaPara` e suporte ao `tipo` para pontos.
   - `src/pages/MapPoiEditor.jsx`: Conectado o estado e a lista de POIs disponíveis ao `PoiForm`.
+
+- **Etapa 6 concluída**:
+  - `src/lib/graph/graphUtils.js`: Atualizada função `addEdge` para suportar metadados adicionais na aresta (ex: `tipo: "vertical"`).
+  - `src/lib/graph/buildGraph.js`: Suporte a nós do tipo `Point` no grafo e geração de arestas verticais bidirecionais com peso 50 e identificador `tipo: "vertical"` entre features vinculadas por `conectaPara`. Testado com sucesso via Dijkstra entre diferentes andares.
 
 ---
 

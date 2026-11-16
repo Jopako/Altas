@@ -3,14 +3,15 @@
  */
 import { keyOf, toPoint } from './geoMath.js';
 
-export function addEdge(graph, u, v, weight, acessivel) {
+export function addEdge(graph, u, v, weight, acessivel, extra = {}) {
   if (!graph[u]) graph[u] = [];
   const existing = graph[u].find((e) => e.to === v);
   if (!existing) {
-    graph[u].push({ to: v, weight, acessivel });
+    graph[u].push({ to: v, weight, acessivel, ...extra });
   } else if (weight < existing.weight) {
     existing.weight = weight;
     existing.acessivel = acessivel;
+    Object.assign(existing, extra);
   }
 }
 
