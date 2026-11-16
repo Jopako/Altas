@@ -115,22 +115,9 @@ export default function MapViewer() {
 
     processedPoiRef.current = poiIdUrl;
 
-    // 2. Abre as informações do ponto escaneado e ativa o bloco
+    // 2. Abre as informações do ponto escaneado
     setPoiSelecionado(poiEscaneado);
     setPoiExpandido(poiEscaneado);
-    const targetBlock = poiEscaneado.properties?.blockId || blocoUrl;
-    if (targetBlock) {
-      setBlocoAtivo(targetBlock);
-    }
-
-    const center = getFeatureCenter(poiEscaneado);
-    const navOrigemObj = {
-      id: poiEscaneado.properties?.id,
-      name: poiEscaneado.properties?.name || "Local atual",
-      lng: center?.lng,
-      lat: center?.lat,
-      feature: poiEscaneado,
-    };
 
     // 3. Recupera o destino salvo (se existir)
     const savedDestinoStr = sessionStorage.getItem('altas_nav_destino');
@@ -141,13 +128,50 @@ export default function MapViewer() {
       savedDestino = null;
     }
 
+    // Suporte a transição multi-piso na escada/elevador (Etapa 8):
+    // Se escanear escada/elevador com conectaPara e o destino salvo estiver no piso conectado,
+    // transiciona a origem e o bloco ativo diretamente para o andar conectado.
+    let pontoOrigemFinal = poiEscaneado;
+    let blocoFinal = poiEscaneado.properties?.blockId || blocoUrl;
+
+    if (
+      savedDestino &&
+      poiEscaneado.properties?.conectaPara &&
+      (poiEscaneado.properties?.tipo === 'escada' || poiEscaneado.properties?.tipo === 'elevador')
+    ) {
+      const pontoConectado = allFeatures.find(
+        (f) =>
+          f.properties?.id === poiEscaneado.properties?.conectaPara ||
+          f.properties?.name === poiEscaneado.properties?.conectaPara
+      );
+      const destinoBlockId = savedDestino.feature?.properties?.blockId;
+
+      if (pontoConectado && destinoBlockId === pontoConectado.properties?.blockId) {
+        pontoOrigemFinal = pontoConectado;
+        blocoFinal = pontoConectado.properties?.blockId;
+      }
+    }
+
+    if (blocoFinal) {
+      setBlocoAtivo(blocoFinal);
+    }
+
+    const center = getFeatureCenter(pontoOrigemFinal);
+    const navOrigemObj = {
+      id: pontoOrigemFinal.properties?.id,
+      name: pontoOrigemFinal.properties?.name || "Local atual",
+      lng: center?.lng,
+      lat: center?.lat,
+      feature: pontoOrigemFinal,
+    };
+
     if (!savedDestino) {
       // CENÁRIO A: Primeiro scan. Define como Origem e abre rota para escolher destino.
       setNavOrigem(navOrigemObj);
       setAlvoAtivo("destino");
       setIsRoutePanelOpen(true);
     } else {
-      // CENÁRIO B: Já tem um destino, escaneou um QR intermediário ou final.
+      // CENÁRIO B: Já tem um destino, escaneou um QR intermediário, escada ou final.
       if (String(savedDestino.id) === String(poiEscaneado.properties?.id)) {
         // ELE CHEGOU!
         alert(`🎉 Você chegou ao seu destino: ${poiEscaneado.properties?.name || "Destino"}!`);
@@ -156,7 +180,7 @@ export default function MapViewer() {
         sessionStorage.removeItem('altas_nav_destino');
         limparRota();
       } else {
-        // Checkpoint no meio do caminho. Atualiza a origem e mantém o destino.
+        // Checkpoint no meio do caminho / escada. Atualiza a origem e mantém o destino.
         setNavDestino(savedDestino);
         setNavOrigem(navOrigemObj);
         setAlvoAtivo("destino");

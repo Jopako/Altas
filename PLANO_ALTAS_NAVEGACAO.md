@@ -21,7 +21,7 @@
 - [x] **Etapa 5** — Modelagem de escadas/elevadores (editor + dados)
 - [x] **Etapa 6** — Grafo com aresta vertical (`buildGraph.js`)
 - [x] **Etapa 7** — Rota partida em segmentos + `RoutePanel` + visual por andar
-- [ ] **Etapa 8** — QR na escada (troca automática de andar)
+- [x] **Etapa 8** — QR na escada (troca automática de andar)
 - [ ] **Etapa 9** — Testes finais multi-piso
 
 ## 📝 LOG
@@ -55,6 +55,9 @@ _(a IA escreve aqui ao fim de cada etapa ou ao parar no meio)_
   - `src/components/map/viewer/MapRoute.jsx` e `src/components/map/ViewerMap.jsx`: Exibição do segmento correspondente ao `blocoAtivo` e destaque visual na escada de saída; na visão global, renderiza segmentos independentes sem traço contínuo direto.
   - `src/components/map/RoutePanel.jsx`: Visualização das instruções multi-piso com divisão por trechos e suporte à reprodução por voz (TTS).
   - `src/pages/MapViewer.jsx`: Conectadas as novas props `rotaSegmentos` e `transicoesVerticais`.
+
+- **Etapa 8 concluída**:
+  - `src/pages/MapViewer.jsx`: Ao escanear o QR da escada/elevador (ou ponto com `conectaPara`), o sistema detecta se o destino salvo está no piso conectado e atualiza automaticamente o `blocoAtivo` e a `navOrigem` para a escada do andar conectado. A rota é recarregada mostrando apenas o trecho restante até a sala final.
 
 ---
 
