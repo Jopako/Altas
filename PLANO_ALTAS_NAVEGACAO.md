@@ -22,7 +22,7 @@
 - [x] **Etapa 6** — Grafo com aresta vertical (`buildGraph.js`)
 - [x] **Etapa 7** — Rota partida em segmentos + `RoutePanel` + visual por andar
 - [x] **Etapa 8** — QR na escada (troca automática de andar)
-- [ ] **Etapa 9** — Testes finais multi-piso
+- [x] **Etapa 9** — Testes finais multi-piso
 
 ## 📝 LOG
 _(a IA escreve aqui ao fim de cada etapa ou ao parar no meio)_
@@ -58,6 +58,9 @@ _(a IA escreve aqui ao fim de cada etapa ou ao parar no meio)_
 
 - **Etapa 8 concluída**:
   - `src/pages/MapViewer.jsx`: Ao escanear o QR da escada/elevador (ou ponto com `conectaPara`), o sistema detecta se o destino salvo está no piso conectado e atualiza automaticamente o `blocoAtivo` e a `navOrigem` para a escada do andar conectado. A rota é recarregada mostrando apenas o trecho restante até a sala final.
+
+- **Etapa 9 concluída**:
+  - Testes práticos multi-piso validados em dispositivo mobile real pelo usuário: fluxo de escaneamento de escada conectada, transição automática para o andar superior, retenção do destino no `localStorage` e recálculo da rota restante da escada até a sala final funcionando perfeitamente.
 
 ---
 
@@ -252,9 +255,9 @@ A escada é um **checkpoint de troca de andar**:
 
 ## Etapa 9 — Testes finais
 
-- [ ] Desenhar uma escada no Térreo e outra no Superior
-- [ ] Marcar `tipo: escada` no editor
-- [ ] Traçar rota de uma sala do Térreo para uma sala do Superior
-- [ ] Dijkstra passa pelas escadas
-- [ ] Mapa desenha a rota até a escada do Térreo e continua da escada do Superior até o destino
-- [ ] Fluxo completo no celular com QR (Térreo → escada → Superior → chegada)
+- [x] Desenhar uma escada no Térreo e outra no Superior
+- [x] Marcar `tipo: escada` no editor
+- [x] Traçar rota de uma sala do Térreo para uma sala do Superior
+- [x] Dijkstra passa pelas escadas
+- [x] Mapa desenha a rota até a escada do Térreo e continua da escada do Superior até o destino
+- [x] Fluxo completo no celular com QR (Térreo → escada → Superior → chegada)
