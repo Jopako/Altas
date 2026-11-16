@@ -33,7 +33,7 @@ export default function MapViewer() {
   const [navOrigem, setNavOrigem] = useState(null);
   const [navDestino, setNavDestino] = useState(() => {
     try {
-      const saved = sessionStorage.getItem('altas_nav_destino');
+      const saved = localStorage.getItem('altas_nav_destino');
       return saved ? JSON.parse(saved) : null;
     } catch {
       return null;
@@ -42,12 +42,16 @@ export default function MapViewer() {
   const [alvoAtivo, setAlvoAtivo] = useState("origem");
   const [isRoutePanelOpen, setIsRoutePanelOpen] = useState(false);
 
-  // Sincroniza navDestino com sessionStorage para preservar em navegação/recarregamento
+  // Sincroniza navDestino com localStorage para preservar entre abas, recarregamento e scans de câmera
   useEffect(() => {
-    if (navDestino) {
-      sessionStorage.setItem('altas_nav_destino', JSON.stringify(navDestino));
-    } else {
-      sessionStorage.removeItem('altas_nav_destino');
+    try {
+      if (navDestino) {
+        localStorage.setItem('altas_nav_destino', JSON.stringify(navDestino));
+      } else {
+        localStorage.removeItem('altas_nav_destino');
+      }
+    } catch (e) {
+      console.warn("Erro ao sincronizar destino com localStorage:", e);
     }
   }, [navDestino]);
 
@@ -120,7 +124,7 @@ export default function MapViewer() {
     setPoiExpandido(poiEscaneado);
 
     // 3. Recupera o destino salvo (se existir)
-    const savedDestinoStr = sessionStorage.getItem('altas_nav_destino');
+    const savedDestinoStr = localStorage.getItem('altas_nav_destino');
     let savedDestino = null;
     try {
       savedDestino = savedDestinoStr ? JSON.parse(savedDestinoStr) : null;
@@ -177,7 +181,7 @@ export default function MapViewer() {
         alert(`Você chegou ao seu destino: ${poiEscaneado.properties?.name || "Destino"}!`);
         setNavDestino(null);
         setNavOrigem(null);
-        sessionStorage.removeItem('altas_nav_destino');
+        localStorage.removeItem('altas_nav_destino');
         limparRota();
       } else {
         // Checkpoint no meio do caminho / escada. Atualiza a origem e mantém o destino.
@@ -254,6 +258,9 @@ export default function MapViewer() {
   function handleResetRoute() {
     setNavOrigem(null);
     setNavDestino(null);
+    try {
+      localStorage.removeItem('altas_nav_destino');
+    } catch {}
     limparRota();
     setAlvoAtivo("origem");
     setPoiSelecionado(null);
