@@ -167,7 +167,7 @@ export function useIndoorRoute(mapData, navOrigem, navDestino, somenteAcessivel)
         distanciaMetros: distCalculada,
       }]);
       setTransicoesVerticais([]);
-      setRotaTexto(`Rota de "${navOrigem.name}" até "${navDestino.name}" traçada no mapa (~${Math.round(distCalculada)} metros).`);
+      setRotaTexto(`Rota de ${navOrigem.name} até ${navDestino.name} traçada no mapa com cerca de ${Math.round(distCalculada)} metros.`);
       setRotaErro('');
     } else {
       // Cenário Multi-piso (cruza escadas / elevadores)
@@ -246,9 +246,9 @@ export function useIndoorRoute(mapData, navOrigem, navDestino, somenteAcessivel)
         const destBlockNome = mapData?.blockMeta?.[tr.toBlockId]?.name || tr.toBlockId || 'Andar Superior';
         const verboSubida = tr.tipo === 'elevador' ? 'Pegue o elevador para' : 'Suba para';
 
-        setRotaTexto(`Vá até a ${tr.fromName} (~${dist1}m). ${verboSubida} o ${destBlockNome}. Siga por mais ~${dist2}m até "${navDestino.name}".`);
+        setRotaTexto(`Vá até a ${tr.fromName} por cerca de ${dist1} metros. ${verboSubida} o ${destBlockNome}. Siga por mais ${dist2} metros até ${navDestino.name}.`);
       } else {
-        setRotaTexto(`Rota de "${navOrigem.name}" até "${navDestino.name}" traçada no mapa (~${Math.round(totalDistMetros)} metros).`);
+        setRotaTexto(`Rota de ${navOrigem.name} até ${navDestino.name} traçada no mapa com cerca de ${Math.round(totalDistMetros)} metros.`);
       }
       setRotaErro('');
     }

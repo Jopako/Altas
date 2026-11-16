@@ -118,7 +118,7 @@ export function PoiForm({
           isDark ? 'bg-blue-950/20 border-blue-500/30' : 'bg-blue-50/80 border-blue-200'
         }`}>
           <label className={`${labelStyle} text-blue-500 dark:text-blue-400 font-bold flex items-center justify-between`}>
-            <span>🔗 Conectar ao outro piso (conectaPara):</span>
+            <span>Conectar ao outro piso (conectaPara):</span>
           </label>
           <p className="text-[11px] opacity-75 leading-relaxed">
             Informe o ID ou nome do ponto no outro andar correspondente a esta escada/elevador (ex: <code className="font-mono">escada-s-1</code>).

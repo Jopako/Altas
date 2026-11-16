@@ -174,7 +174,7 @@ export default function MapViewer() {
       // CENÁRIO B: Já tem um destino, escaneou um QR intermediário, escada ou final.
       if (String(savedDestino.id) === String(poiEscaneado.properties?.id)) {
         // ELE CHEGOU!
-        alert(`🎉 Você chegou ao seu destino: ${poiEscaneado.properties?.name || "Destino"}!`);
+        alert(`Você chegou ao seu destino: ${poiEscaneado.properties?.name || "Destino"}!`);
         setNavDestino(null);
         setNavOrigem(null);
         sessionStorage.removeItem('altas_nav_destino');
@@ -332,7 +332,7 @@ export default function MapViewer() {
               <div className={`p-3 rounded-xl flex items-center justify-between text-sm font-bold shadow-sm ${
                 theme === "dark" ? "bg-[#4A7FD4]/20 text-white border border-[#4A7FD4]/30" : "bg-[#3F64A6]/10 text-[#1B2F55] border border-[#3F64A6]/20"
               }`}>
-                <span className="truncate pr-2">📍 {workspace.blockMeta?.[blocoAtivo]?.name || blocoAtivo}</span>
+                <span className="truncate pr-2">{workspace.blockMeta?.[blocoAtivo]?.name || blocoAtivo}</span>
                 <button
                   onClick={() => handleBlocoClick(null)}
                   className="text-[11px] underline opacity-70 hover:opacity-100 cursor-pointer whitespace-nowrap"

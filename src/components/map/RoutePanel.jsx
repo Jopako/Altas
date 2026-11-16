@@ -167,12 +167,12 @@ export function RoutePanel({
               {transicoesVerticais.length > 0 && (
                 <div className="mt-2.5 pt-2.5 border-t border-blue-500/20 flex flex-col gap-1.5 text-[11px]">
                   <span className="font-bold opacity-80 flex items-center gap-1">
-                    🪜 Rota Multi-piso:
+                    Rota Multi-piso:
                   </span>
                   {rotaSegmentos.map((seg, idx) => (
                     <div key={seg.id || idx} className="flex items-center justify-between opacity-90 pl-2 border-l-2 border-blue-400">
                       <span>Trecho {idx + 1} {seg.blockId ? `(${seg.blockId})` : ''}</span>
-                      <span className="font-semibold">~{Math.round(seg.distanciaMetros)}m</span>
+                      <span className="font-semibold">{Math.round(seg.distanciaMetros)} metros</span>
                     </div>
                   ))}
                 </div>
@@ -181,7 +181,7 @@ export function RoutePanel({
 
             {distanciaMetros != null && (
               <p className={`text-[11px] font-semibold ${isDark ? 'text-emerald-400' : 'text-emerald-600'}`}>
-                Distância total estimada: ~{Math.round(distanciaMetros)} metros
+                Distância total estimada: {Math.round(distanciaMetros)} metros
               </p>
             )}
 
