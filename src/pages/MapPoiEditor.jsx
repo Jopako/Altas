@@ -25,6 +25,7 @@ export default function MapPoiEditor() {
     workspace, loading, selectedBlockId, setSelectedBlockId,
     selectedLayerKey, selectedLayerKind, activeTool, setActiveTool,
     drawingPoints, setDrawingPoints, poiName, setPoiName, poiTipo, setPoiTipo,
+    poiConectaPara, setPoiConectaPara,
     poiGallery, setPoiGallery, poiAcessivel, setPoiAcessivel,
     poiLargura, setPoiLargura, savingMap, featureGroupRef, selectedLayerRef,
     selectLayerHandlerRef, selectLayer, clearPoiForm, applyPoiChanges,
@@ -130,6 +131,9 @@ export default function MapPoiEditor() {
                   setPoiName={setPoiName}
                   poiTipo={poiTipo}
                   setPoiTipo={setPoiTipo}
+                  poiConectaPara={poiConectaPara}
+                  setPoiConectaPara={setPoiConectaPara}
+                  availablePois={workspace?.features?.features || []}
                   poiGallery={poiGallery}
                   setPoiGallery={setPoiGallery}
                   onPhotoUpload={handlePoiPhotoUpload}

@@ -8,6 +8,7 @@ export function useLayerEditor(selectedBlockId) {
   
   const [poiName, setPoiName] = useState("");
   const [poiTipo, setPoiTipo] = useState("sala");
+  const [poiConectaPara, setPoiConectaPara] = useState("");
   const [poiGallery, setPoiGallery] = useState([]);
   const [poiAcessivel, setPoiAcessivel] = useState(true);
   const [poiLargura, setPoiLargura] = useState(60);
@@ -39,6 +40,7 @@ export function useLayerEditor(selectedBlockId) {
     const props = layer.feature?.properties || {};
     setPoiName(props.name || '');
     setPoiTipo(props.tipo || 'sala');
+    setPoiConectaPara(props.conectaPara || '');
     setPoiGallery(props.gallery || (props.photoUrl ? [{ photo: props.photoUrl, description: props.description || '' }] : []));
     setPoiAcessivel(props.acessivel !== false);
     setPoiLargura(props.largura ?? 60);
@@ -55,6 +57,7 @@ export function useLayerEditor(selectedBlockId) {
     setSelectedLayerKind(null);
     setPoiName('');
     setPoiTipo('sala');
+    setPoiConectaPara('');
     setPoiGallery([]);
     setPoiAcessivel(true);
     setPoiLargura(60);
@@ -76,6 +79,7 @@ export function useLayerEditor(selectedBlockId) {
         properties: { id: poiId, kind: 'edge', blockId: selectedBlockId, acessivel: poiAcessivel, largura: poiLargura },
       };
     } else {
+      const isVertical = poiTipo === 'escada' || poiTipo === 'elevador';
       layer.feature = {
         type: 'Feature',
         properties: {
@@ -83,7 +87,8 @@ export function useLayerEditor(selectedBlockId) {
           id: poiId,
           kind,
           blockId: selectedBlockId,
-          tipo: kind === 'area' ? poiTipo : undefined,
+          tipo: poiTipo,
+          conectaPara: isVertical && poiConectaPara ? poiConectaPara.trim() : undefined,
           name: poiName,
           gallery: poiGallery,
           description: poiGallery[0]?.description || '',
@@ -99,6 +104,7 @@ export function useLayerEditor(selectedBlockId) {
   return {
     selectedLayerKey, selectedLayerKind,
     poiName, setPoiName, poiTipo, setPoiTipo,
+    poiConectaPara, setPoiConectaPara,
     poiGallery, setPoiGallery, poiAcessivel, setPoiAcessivel,
     poiLargura, setPoiLargura,
     selectedLayerRef, selectLayerHandlerRef, selectLayer, clearPoiForm, applyPoiChanges

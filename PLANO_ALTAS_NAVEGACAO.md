@@ -17,8 +17,8 @@
 - [x] **Etapa 1** — Escala em metros (`useIndoorRoute` + `RoutePanel`)
 - [x] **Etapa 2** — Salvar destino no `sessionStorage` (`MapViewer`)
 - [x] **Etapa 3** — Fluxo do QR Code / checkpoints (`MapViewer`)
-- [ ] **Etapa 4** — Teste mobile da navegação por QR
-- [ ] **Etapa 5** — Modelagem de escadas/elevadores (editor + dados)
+- [x] **Etapa 4** — Teste mobile da navegação por QR
+- [x] **Etapa 5** — Modelagem de escadas/elevadores (editor + dados)
 - [ ] **Etapa 6** — Grafo com aresta vertical (`buildGraph.js`)
 - [ ] **Etapa 7** — Rota partida em segmentos + `RoutePanel` + visual por andar
 - [ ] **Etapa 8** — QR na escada (troca automática de andar)
@@ -36,7 +36,15 @@ _(a IA escreve aqui ao fim de cada etapa ou ao parar no meio)_
   - `src/pages/MapViewer.jsx`: Adicionada persistência de `navDestino` no `sessionStorage` (`altas_nav_destino`) via `useEffect` e inicialização de estado restaurando do `sessionStorage`.
 
 - **Etapa 3 concluída**:
-  - `src/pages/MapViewer.jsx`: Implementado fluxo de checkpoints por QR Code. Se não houver destino salvo (Cenário A), define como Origem e abre o painel de rotas focado em Destino; se já houver destino e o QR for o destino, emite alerta de chegada e limpa os dados; se for um QR intermediário (Cenário B), atualiza a origem, preserva o destino e recalcula a rota.
+  - `src/pages/MapViewer.jsx`: Implementado fluxo de checkpoints por QR Code (cenários A, B e chegada). Corrigido loop de reabertura do modal com trava `processedPoiRef` e `useCallback` em `limparRota`.
+
+- **Etapa 4 concluída**:
+  - Teste mobile validado pelo usuário via celular e configurada variável de ambiente para IP do host em `PoiForm.jsx`.
+
+- **Etapa 5 concluída**:
+  - `src/components/map/editor/PoiForm.jsx`: Habilitada seleção de tipo (`escada`, `elevador`, `sala`, etc.) para qualquer geometria (ponto ou área). Adicionado campo de conexão multi-piso `conectaPara` com datalist de pontos cadastrados. Preservada a configuração de `VITE_PUBLIC_FRONTEND_URL`.
+  - `src/hooks/poiEditor/useLayerEditor.js`: Adicionados estados e persistência de `poiConectaPara` e suporte ao `tipo` para pontos.
+  - `src/pages/MapPoiEditor.jsx`: Conectado o estado e a lista de POIs disponíveis ao `PoiForm`.
 
 ---
 

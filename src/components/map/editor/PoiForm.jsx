@@ -16,6 +16,9 @@ export function PoiForm({
   setPoiName,
   poiTipo,
   setPoiTipo,
+  poiConectaPara,
+  setPoiConectaPara,
+  availablePois = [],
   poiGallery,
   setPoiGallery,
   onPhotoUpload,
@@ -30,7 +33,9 @@ export function PoiForm({
   const isDark = theme === 'dark';
 
   // Monta a URL de destino do QR Code
-  const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+  const baseUrl =
+  import.meta.env.VITE_PUBLIC_FRONTEND_URL ||
+  (typeof window !== "undefined" ? window.location.origin : "");
   const qrUrl = `${baseUrl}/map-viewer?bloco=${encodeURIComponent(selectedBlockId || '')}&poi=${encodeURIComponent(poiId || '')}`;
 
   // Baixa o QR Code gerado em formato PNG
@@ -96,16 +101,56 @@ export function PoiForm({
       </div>
 
       {/* TIPO */}
-      {selectedLayerKind === 'area' && (
-        <div>
-          <label className={labelStyle}>Tipo:</label>
-          <select value={poiTipo} onChange={(e) => setPoiTipo(e.target.value)} className={inputStyle}>
-            <option value="sala">Sala</option>
-            <option value="banheiro">Banheiro</option>
-            <option value="escada">Escada</option>
-            <option value="elevador">Elevador</option>
-            <option value="outro">Outro</option>
-          </select>
+      <div>
+        <label className={labelStyle}>Tipo:</label>
+        <select value={poiTipo} onChange={(e) => setPoiTipo(e.target.value)} className={inputStyle}>
+          <option value="sala">Sala</option>
+          <option value="banheiro">Banheiro</option>
+          <option value="escada">Escada</option>
+          <option value="elevador">Elevador</option>
+          <option value="outro">Outro</option>
+        </select>
+      </div>
+
+      {/* CONECTA PARA (Transição Multi-piso: Escadas e Elevadores) */}
+      {(poiTipo === 'escada' || poiTipo === 'elevador') && (
+        <div className={`p-3 rounded-xl border flex flex-col gap-2 ${
+          isDark ? 'bg-blue-950/20 border-blue-500/30' : 'bg-blue-50/80 border-blue-200'
+        }`}>
+          <label className={`${labelStyle} text-blue-500 dark:text-blue-400 font-bold flex items-center justify-between`}>
+            <span>🔗 Conectar ao outro piso (conectaPara):</span>
+          </label>
+          <p className="text-[11px] opacity-75 leading-relaxed">
+            Informe o ID ou nome do ponto no outro andar correspondente a esta escada/elevador (ex: <code className="font-mono">escada-s-1</code>).
+          </p>
+          <input
+            type="text"
+            list="pois-conecta-list"
+            value={poiConectaPara || ''}
+            onChange={(e) => setPoiConectaPara(e.target.value)}
+            placeholder="Ex: escada-s-1 ou selecione da lista..."
+            className={inputStyle}
+          />
+          {availablePois && availablePois.length > 0 && (
+            <datalist id="pois-conecta-list">
+              {availablePois
+                .filter((f) => {
+                  const id = f.properties?.id;
+                  return id && id !== poiId;
+                })
+                .map((f) => {
+                  const id = f.properties?.id;
+                  const name = f.properties?.name || id;
+                  const bId = f.properties?.blockId ? ` (${f.properties.blockId})` : '';
+                  const tipo = f.properties?.tipo ? ` [${f.properties.tipo}]` : '';
+                  return (
+                    <option key={id} value={id}>
+                      {name}{tipo}{bId}
+                    </option>
+                  );
+                })}
+            </datalist>
+          )}
         </div>
       )}
 
